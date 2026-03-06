@@ -1,0 +1,177 @@
+menu "CarMood Board Config"
+
+config CARMOOD_OLED_PIN_SCK
+    int "OLED SPI SCK GPIO"
+    default 13
+
+config CARMOOD_OLED_PIN_MOSI
+    int "OLED SPI MOSI GPIO"
+    default 12
+
+config CARMOOD_OLED_PIN_CS
+    int "OLED SPI CS GPIO"
+    default 9
+
+config CARMOOD_OLED_PIN_DC
+    int "OLED SPI DC GPIO"
+    default 10
+
+config CARMOOD_OLED_PIN_RST
+    int "OLED SPI RST GPIO"
+    default 11
+
+config CARMOOD_LIS3DH_I2C_PORT
+    int "LIS3DH I2C Port"
+    range 0 1
+    default 0
+
+config CARMOOD_LIS3DH_I2C_SDA
+    int "LIS3DH I2C SDA GPIO"
+    default 38
+
+config CARMOOD_LIS3DH_I2C_SCL
+    int "LIS3DH I2C SCL GPIO"
+    default 37
+
+config CARMOOD_LIS3DH_I2C_FREQ_HZ
+    int "LIS3DH I2C Frequency (Hz)"
+    range 10000 1000000
+    default 400000
+
+config CARMOOD_TOUCH_PAD_CHANNEL
+    int "Touch Pad Channel"
+    range 0 14
+    default 7
+
+config CARMOOD_LIS3DH_REZERO_HOLD_MS
+    int "长按触发重标定时长（毫秒）"
+    range 200 5000
+    default 1200
+
+config CARMOOD_LIS3DH_CALIB_STEP_MS
+    int "方向标定每步时长（毫秒）"
+    range 500 10000
+    default 3500
+
+config CARMOOD_LIS3DH_CALIB_GAP_MS
+    int "方向标定步骤间隔（毫秒）"
+    range 100 5000
+    default 800
+
+endmenu
+
+menu "CarMood Wi-Fi Config"
+
+config CARMOOD_WIFI_SSID
+    string "Wi-Fi SSID"
+    default "IQOO 13"
+    help
+        用于联网校时（NTP）的 Wi-Fi 名称。
+
+config CARMOOD_WIFI_PASSWORD
+    string "Wi-Fi Password"
+    default "88888888"
+    help
+        用于联网校时（NTP）的 Wi-Fi 密码。
+
+config CARMOOD_TIME_SYNC_ON_BOOT
+    bool "开机自动联网校时"
+    default y
+    help
+        启用后，设备启动时会尝试连接 Wi-Fi 并进行 NTP 校时。
+
+config CARMOOD_TIME_SYNC_TIMEOUT_SEC
+    int "联网/校时超时时间（秒）"
+    range 3 120
+    default 30
+    help
+        Wi-Fi 连接与 NTP 等待的超时时间。
+
+config CARMOOD_NTP_SERVER
+    string "NTP Server"
+    default "ntp.aliyun.com"
+    help
+        设备用于校时的 NTP 服务器地址。
+
+config CARMOOD_TIME_TZ
+    string "Timezone (TZ env)"
+    default "CST-8"
+    help
+        C 标准库时区字符串。中国可用 CST-8。
+
+endmenu
+
+menu "CarMood Touch Config"
+
+config CARMOOD_TOUCH_SAMPLE_MS
+    int "触摸采样周期（毫秒）"
+    range 5 200
+    default 20
+    help
+        触摸采样周期。越小响应越快，但日志与 CPU 占用会略增。
+
+config CARMOOD_TOUCH_PRESS_THRESHOLD
+    int "按下阈值（delta >=）"
+    range 50 20000
+    default 300
+    help
+        当 delta >= 本值时，认为采样点满足“按下条件”。
+
+config CARMOOD_TOUCH_RELEASE_THRESHOLD
+    int "释放阈值（delta <=）"
+    range -1000 10000
+    default 120
+    help
+        当 delta <= 本值时，认为采样点满足“释放条件”。
+        该值应小于按下阈值，用于滞回防抖。
+
+config CARMOOD_TOUCH_DEBOUNCE_COUNT
+    int "去抖计数（连续样本数）"
+    range 1 20
+    default 3
+    help
+        连续满足条件多少次才确认状态切换。
+
+config CARMOOD_TOUCH_CLICK_MIN_MS
+    int "有效点击最短时长（毫秒）"
+    range 10 2000
+    default 40
+    help
+        按下时长小于该值会被忽略（过滤毛刺）。
+
+config CARMOOD_TOUCH_CLICK_MAX_MS
+    int "有效点击最长时长（毫秒）"
+    range 50 5000
+    default 800
+    help
+        按下时长大于该值会被忽略（过滤长按）。
+
+config CARMOOD_TOUCH_MIN_GAP_MS
+    int "点击最小间隔（毫秒）"
+    range 50 5000
+    default 250
+    help
+        两次有效点击之间的最小时间间隔，用于抑制重复触发。
+
+config CARMOOD_TOP_DOUBLE_CLICK_MS
+    int "顶部双击识别窗口（毫秒）"
+    range 120 1000
+    default 300
+    help
+        顶部第二次点击若在该窗口内释放，则识别为双击并直接进入 Astra 菜单。
+
+config CARMOOD_MENU_TIMEOUT_MS
+    int "菜单无操作超时（毫秒）"
+    range 1000 30000
+    default 10000
+    help
+        Astra 菜单打开后，超过该时间无输入则自动退出。
+
+config CARMOOD_DEBUG_PERIODIC_LOG
+    bool "开启周期性调试日志（touch/LIS3DH）"
+    default n
+    help
+        关闭时仅保留关键事件日志（如点击、方向变化、错误）。
+        开启后会周期打印触摸与加速度原始数据，便于调试。
+
+endmenu

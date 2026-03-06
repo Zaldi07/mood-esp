@@ -1,0 +1,32 @@
+# macOS
+.DS_Store
+
+# IDE / Editor
+.idea/
+.vscode/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+
+# Logs
+*.log
+
+# ESP-IDF / CMake build outputs
+firmware/build/
+firmware/sdkconfig
+firmware/sdkconfig.old
+firmware/managed_components/
+
+# Local flash / monitor artifacts
+*.elf
+*.bin
+*.map
+
+demo/
+.cache/
