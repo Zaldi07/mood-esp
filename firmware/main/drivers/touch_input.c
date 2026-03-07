@@ -32,7 +32,7 @@ static const char *TAG = "touch_input";
 #define CONFIG_CARMOOD_TOUCH_MIN_GAP_MS 250
 #endif
 #ifndef CONFIG_CARMOOD_TOP_DOUBLE_CLICK_MS
-#define CONFIG_CARMOOD_TOP_DOUBLE_CLICK_MS 300
+#define CONFIG_CARMOOD_TOP_DOUBLE_CLICK_MS 500
 #endif
 
 static const int s_touch_channels[TOUCH_KEY_COUNT] = {
@@ -56,6 +56,11 @@ static touch_key_state_t s_key_states[TOUCH_KEY_COUNT] = {};
 
 static int64_t s_last_debug_log_ms = 0;
 #define DEBUG_LOG_INTERVAL_MS 500
+
+/* 滑动检测：记录 UP/DOWN 通道最近一次 press 时间 */
+#define SWIPE_WINDOW_MS 400
+static int64_t s_swipe_press_ms[TOUCH_KEY_COUNT] = {0};
+static bool    s_swipe_consumed = false;
 
 static void touch_reset_event(touch_input_event_t *event) {
   *event = (touch_input_event_t){0};
@@ -130,6 +135,10 @@ static void touch_update_key(
       state->stable_pressed = true;
       state->press_start_ms = now_ms;
       state->press_cnt = 0;
+      if (key == TOUCH_KEY_UP || key == TOUCH_KEY_DOWN) {
+        s_swipe_press_ms[key] = now_ms;
+        s_swipe_consumed = false;
+      }
       ESP_LOGI(
           TAG, "状态变化: PRESSED key=%d delta=%ld", key, (long)delta);
     }
@@ -149,9 +158,10 @@ static void touch_update_key(
           (press_ms >= CONFIG_CARMOOD_TOUCH_CLICK_MIN_MS) &&
           (press_ms <= CONFIG_CARMOOD_TOUCH_CLICK_MAX_MS) &&
           (gap_ms >= min_gap_ms);
+      bool supports_double_click = (key == TOUCH_KEY_TOP);
       bool is_double_click =
           valid_click &&
-          key == TOUCH_KEY_TOP &&
+          supports_double_click &&
           state->last_click_count == 1 &&
           gap_ms <= CONFIG_CARMOOD_TOP_DOUBLE_CLICK_MS;
 
@@ -160,7 +170,8 @@ static void touch_update_key(
       if (valid_click) {
         state->last_click_ms = now_ms;
         state->last_click_count = is_double_click ? 2 : 1;
-      } else if (gap_ms > CONFIG_CARMOOD_TOP_DOUBLE_CLICK_MS) {
+      } else if (supports_double_click &&
+                 gap_ms > CONFIG_CARMOOD_TOP_DOUBLE_CLICK_MS) {
         state->last_click_count = 0;
       }
 
@@ -218,6 +229,30 @@ esp_err_t touch_input_poll(touch_input_event_t *event) {
 
   for (int i = 0; i < TOUCH_KEY_COUNT; ++i) {
     touch_update_key((touch_key_t)i, now_ms, deltas[i], event);
+  }
+
+  /* 滑动检测：两个通道在窗口内先后被按下 */
+  if (!s_swipe_consumed &&
+      s_swipe_press_ms[TOUCH_KEY_UP] > 0 &&
+      s_swipe_press_ms[TOUCH_KEY_DOWN] > 0) {
+    int64_t diff = s_swipe_press_ms[TOUCH_KEY_DOWN] - s_swipe_press_ms[TOUCH_KEY_UP];
+    if (diff > 0 && diff <= SWIPE_WINDOW_MS) {
+      event->swipe = TOUCH_SWIPE_DOWN;
+      s_swipe_consumed = true;
+      ESP_LOGI(TAG, "滑动检测: 向下 (diff=%lldms)", (long long)diff);
+    } else if (diff < 0 && -diff <= SWIPE_WINDOW_MS) {
+      event->swipe = TOUCH_SWIPE_UP;
+      s_swipe_consumed = true;
+      ESP_LOGI(TAG, "滑动检测: 向上 (diff=%lldms)", (long long)-diff);
+    }
+  }
+
+  /* 两个通道都释放后重置滑动状态 */
+  if (!event->samples[TOUCH_KEY_UP].stable_pressed &&
+      !event->samples[TOUCH_KEY_DOWN].stable_pressed) {
+    s_swipe_press_ms[TOUCH_KEY_UP] = 0;
+    s_swipe_press_ms[TOUCH_KEY_DOWN] = 0;
+    s_swipe_consumed = false;
   }
 
   return ESP_OK;

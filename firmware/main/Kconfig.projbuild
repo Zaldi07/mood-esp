@@ -156,16 +156,16 @@ config CARMOOD_TOUCH_MIN_GAP_MS
 config CARMOOD_TOP_DOUBLE_CLICK_MS
     int "顶部双击识别窗口（毫秒）"
     range 120 1000
-    default 300
+    default 500
     help
         顶部第二次点击若在该窗口内释放，则识别为双击并直接进入 Astra 菜单。
 
-config CARMOOD_MENU_TIMEOUT_MS
-    int "菜单无操作超时（毫秒）"
-    range 1000 30000
-    default 10000
+config CARMOOD_MENU_BACK_HOLD_MS
+    int "菜单/页面返回长按时长（毫秒）"
+    range 200 2000
+    default 500
     help
-        Astra 菜单打开后，超过该时间无输入则自动退出。
+        菜单中顶部长按返回，以及打飞机模式顶部长按退出所使用的触发时长。
 
 config CARMOOD_DEBUG_PERIODIC_LOG
     bool "开启周期性调试日志（touch/LIS3DH）"

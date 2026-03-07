@@ -20,6 +20,9 @@ void astra_menu_input_back(void);
 
 bool astra_menu_should_run_calibration(void);
 bool astra_menu_should_toggle_muyu(void);
+bool astra_menu_should_toggle_shooter(void);
+bool astra_menu_should_toggle_brick(void);
+bool astra_menu_should_toggle_flappy(void);
 void astra_menu_consume_actions(void);
 
 #ifdef __cplusplus

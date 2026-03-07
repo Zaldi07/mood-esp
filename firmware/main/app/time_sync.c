@@ -38,7 +38,7 @@ static volatile bool s_time_synced = false;
 
 #define WIFI_CONNECTED_BIT BIT0
 #define WIFI_FAIL_BIT BIT1
-#define WIFI_MAX_RETRY 10
+#define WIFI_MAX_RETRY 5
 
 static int s_retry_num = 0;
 static EventGroupHandle_t s_wifi_event_group = NULL;

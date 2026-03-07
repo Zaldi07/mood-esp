@@ -14,20 +14,28 @@
 #include "ssd1306_oled.h"
 #include "ui/face_renderer.h"
 #include "ui/muyu_renderer.h"
+#include "ui/layout_renderer.h"
+#include "ui/brick_game.h"
+#include "ui/flappy_game.h"
+#include "ui/shooter_game.h"
 
 static const char *TAG = "carmood_ui";
 
 /* 目标 30fps = 33ms/帧，OLED 上已足够丝滑 */
 #define ANIM_FRAME_MS 33
-
 /* 共享状态（由 mutex 保护） */
 static SemaphoreHandle_t s_mutex;
 static volatile carmood_expr_t s_cur_expr     = EXPR_IDLE;
 static volatile carmood_expr_t s_pending_expr = EXPR_IDLE;
 static volatile bool           s_expr_changed = false;
 static volatile bool           s_anim_paused  = false;
+static volatile carmood_display_mode_t s_display_mode = CARMOOD_DISPLAY_MODE_FACE;
+static volatile bool           s_debug_mode   = false;
 static char                    s_turn_char    = 'C';
 static char                    s_pitch_char   = 'N';
+static int32_t                 s_motion_lr_val = 0;
+static int32_t                 s_motion_fb_val = 0;
+static int32_t                 s_motion_shake_val = 0;
 
 /* 木鱼模式状态 */
 static volatile bool    s_muyu_mode      = false;
@@ -35,6 +43,11 @@ static volatile bool    s_muyu_tapped    = false;
 static volatile bool    s_muyu_animating = false;
 static volatile int     s_muyu_count     = 0;
 static int64_t          s_muyu_tap_start = 0;
+
+/* 打飞机游戏模式状态 */
+static volatile bool    s_shooter_mode   = false;
+static volatile bool    s_brick_mode     = false;
+static volatile bool    s_flappy_mode    = false;
 
 /* ------------------------------------------------------------------ */
 /* 5x7 字体（校准流程用）                                               */
@@ -54,12 +67,14 @@ static bool get_glyph_5x7(char c, uint8_t glyph[5])
         case 'I': { uint8_t g[5]={0x00,0x41,0x7F,0x41,0x00}; memcpy(glyph,g,5); return true; }
         case 'K': { uint8_t g[5]={0x7F,0x08,0x14,0x22,0x41}; memcpy(glyph,g,5); return true; }
         case 'L': { uint8_t g[5]={0x7F,0x40,0x40,0x40,0x40}; memcpy(glyph,g,5); return true; }
+        case 'M': { uint8_t g[5]={0x7F,0x02,0x0C,0x02,0x7F}; memcpy(glyph,g,5); return true; }
         case 'N': { uint8_t g[5]={0x7F,0x02,0x0C,0x10,0x7F}; memcpy(glyph,g,5); return true; }
         case 'O': { uint8_t g[5]={0x3E,0x41,0x41,0x41,0x3E}; memcpy(glyph,g,5); return true; }
         case 'P': { uint8_t g[5]={0x7F,0x09,0x09,0x09,0x06}; memcpy(glyph,g,5); return true; }
         case 'R': { uint8_t g[5]={0x7F,0x09,0x19,0x29,0x46}; memcpy(glyph,g,5); return true; }
         case 'S': { uint8_t g[5]={0x46,0x49,0x49,0x49,0x31}; memcpy(glyph,g,5); return true; }
         case 'T': { uint8_t g[5]={0x01,0x01,0x7F,0x01,0x01}; memcpy(glyph,g,5); return true; }
+        case 'U': { uint8_t g[5]={0x3F,0x40,0x40,0x40,0x3F}; memcpy(glyph,g,5); return true; }
         case 'W': { uint8_t g[5]={0x7F,0x20,0x18,0x20,0x7F}; memcpy(glyph,g,5); return true; }
         case ' ': { uint8_t g[5]={0x00,0x00,0x00,0x00,0x00}; memcpy(glyph,g,5); return true; }
         case '0': { uint8_t g[5]={0x3E,0x51,0x49,0x45,0x3E}; memcpy(glyph,g,5); return true; }
@@ -171,11 +186,59 @@ static void draw_clock(int64_t now_us)
     draw_text(x, 0, buf, 1);
 }
 
+static void draw_clock_fullscreen(int64_t now_us, bool force)
+{
+    static char s_last_buf[6] = "";
+    static bool s_last_wifi_ready = false;
+    char buf[6] = "00:00";
+    time_t now_s = time(NULL);
+    bool is_time_valid = (now_s >= 1704067200);
+
+    if (is_time_valid) {
+        struct tm tm_now;
+        localtime_r(&now_s, &tm_now);
+        buf[0] = '0' + (tm_now.tm_hour / 10);
+        buf[1] = '0' + (tm_now.tm_hour % 10);
+        buf[3] = '0' + (tm_now.tm_min / 10);
+        buf[4] = '0' + (tm_now.tm_min % 10);
+    } else {
+        uint32_t sec = (uint32_t)(now_us / 1000000ULL);
+        uint32_t mm = (sec / 60U) % 100U;
+        uint32_t ss = sec % 60U;
+        buf[0] = '0' + (mm / 10U);
+        buf[1] = '0' + (mm % 10U);
+        buf[3] = '0' + (ss / 10U);
+        buf[4] = '0' + (ss % 10U);
+    }
+
+    bool wifi_ready = carmood_time_sync_is_synced() || is_time_valid;
+    if (!force &&
+        strcmp(buf, s_last_buf) == 0 &&
+        wifi_ready == s_last_wifi_ready) {
+        return;
+    }
+
+    strcpy(s_last_buf, buf);
+    s_last_wifi_ready = wifi_ready;
+
+    oled_clear_buf();
+    draw_text_center(18, buf, 3);
+
+    if (wifi_ready) {
+        draw_text_center(46, "TIME", 1);
+    } else {
+        draw_text_center(46, "UP", 1);
+    }
+
+    oled_flush();
+}
+
 static void anim_task(void *arg)
 {
     (void)arg;
     carmood_expr_t cur_expr = EXPR_IDLE;
     int64_t anim_start_us = esp_timer_get_time();
+    carmood_display_mode_t last_display_mode = CARMOOD_DISPLAY_MODE_FACE;
 
     ESP_LOGI(TAG, "动画任务启动 (实时绘制)");
 
@@ -225,6 +288,37 @@ static void anim_task(void *arg)
             continue;
         }
 
+        /* 打飞机游戏模式 */
+        xSemaphoreTake(s_mutex, portMAX_DELAY);
+        bool in_shooter = s_shooter_mode;
+        xSemaphoreGive(s_mutex);
+
+        if (in_shooter) {
+            shooter_game_tick();
+            vTaskDelay(pdMS_TO_TICKS(ANIM_FRAME_MS));
+            continue;
+        }
+
+        xSemaphoreTake(s_mutex, portMAX_DELAY);
+        bool in_brick = s_brick_mode;
+        xSemaphoreGive(s_mutex);
+
+        if (in_brick) {
+            brick_game_tick();
+            vTaskDelay(pdMS_TO_TICKS(ANIM_FRAME_MS));
+            continue;
+        }
+
+        xSemaphoreTake(s_mutex, portMAX_DELAY);
+        bool in_flappy = s_flappy_mode;
+        xSemaphoreGive(s_mutex);
+
+        if (in_flappy) {
+            flappy_game_tick();
+            vTaskDelay(pdMS_TO_TICKS(ANIM_FRAME_MS));
+            continue;
+        }
+
         /* 检查表情切换 */
         xSemaphoreTake(s_mutex, portMAX_DELAY);
         if (s_expr_changed) {
@@ -234,14 +328,32 @@ static void anim_task(void *arg)
             anim_start_us  = esp_timer_get_time();
             ESP_LOGI(TAG, "切换表情: %d", cur_expr);
         }
+        carmood_display_mode_t display_mode = s_display_mode;
+        bool debug_mode = s_debug_mode;
         char tc = s_turn_char;
         char pc = s_pitch_char;
         xSemaphoreGive(s_mutex);
 
+        if (display_mode == CARMOOD_DISPLAY_MODE_CLOCK) {
+            draw_clock_fullscreen(frame_start_us, last_display_mode != display_mode);
+            last_display_mode = display_mode;
+            vTaskDelay(pdMS_TO_TICKS(200));
+            continue;
+        }
+        if (display_mode == CARMOOD_DISPLAY_MODE_LAYOUT) {
+            layout_render_page(layout_get_default_page());
+            last_display_mode = display_mode;
+            vTaskDelay(pdMS_TO_TICKS(120));
+            continue;
+        }
+        last_display_mode = display_mode;
+
         /* 计算动画时间并实时绘制 */
         uint32_t t_ms = (uint32_t)((esp_timer_get_time() - anim_start_us) / 1000);
         face_render_frame(cur_expr, t_ms);
-        draw_overlay(tc, pc);
+        if (debug_mode) {
+            draw_overlay(tc, pc);
+        }
 
         draw_clock(frame_start_us);
 
@@ -285,6 +397,15 @@ void carmood_ui_set_direction_overlay(char turn_char, char pitch_char)
     xSemaphoreGive(s_mutex);
 }
 
+void carmood_ui_set_motion_input(int32_t lr_val, int32_t fb_val, int32_t shake_val)
+{
+    xSemaphoreTake(s_mutex, portMAX_DELAY);
+    s_motion_lr_val = lr_val;
+    s_motion_fb_val = fb_val;
+    s_motion_shake_val = shake_val;
+    xSemaphoreGive(s_mutex);
+}
+
 void carmood_ui_show_calibration(const char *line1, const char *line2)
 {
     carmood_ui_pause_animation();
@@ -318,6 +439,10 @@ void carmood_ui_enter_muyu(void)
     s_muyu_mode      = true;
     s_muyu_animating = false;
     s_muyu_tapped    = false;
+    /* 特殊模式必须互斥，避免木鱼和打飞机同时生效。 */
+    s_shooter_mode   = false;
+    s_brick_mode     = false;
+    s_flappy_mode    = false;
     xSemaphoreGive(s_mutex);
     ESP_LOGI(TAG, "进入木鱼模式");
 }
@@ -349,6 +474,38 @@ bool carmood_ui_is_muyu_mode(void)
     return ret;
 }
 
+void carmood_ui_set_display_mode(carmood_display_mode_t mode)
+{
+    xSemaphoreTake(s_mutex, portMAX_DELAY);
+    s_display_mode = mode;
+    xSemaphoreGive(s_mutex);
+    ESP_LOGI(TAG, "切换显示模式: %d", mode);
+}
+
+carmood_display_mode_t carmood_ui_get_display_mode(void)
+{
+    xSemaphoreTake(s_mutex, portMAX_DELAY);
+    carmood_display_mode_t ret = s_display_mode;
+    xSemaphoreGive(s_mutex);
+    return ret;
+}
+
+void carmood_ui_set_debug_mode(bool enabled)
+{
+    xSemaphoreTake(s_mutex, portMAX_DELAY);
+    s_debug_mode = enabled;
+    xSemaphoreGive(s_mutex);
+    ESP_LOGI(TAG, "切换 DEBUG 模式: %d", enabled);
+}
+
+bool carmood_ui_is_debug_mode(void)
+{
+    xSemaphoreTake(s_mutex, portMAX_DELAY);
+    bool ret = s_debug_mode;
+    xSemaphoreGive(s_mutex);
+    return ret;
+}
+
 void carmood_ui_get_status(carmood_expr_t *expr,
                            char *turn_char,
                            char *pitch_char,
@@ -362,4 +519,148 @@ void carmood_ui_get_status(carmood_expr_t *expr,
     if (muyu_mode) *muyu_mode = s_muyu_mode;
     if (muyu_count) *muyu_count = s_muyu_count;
     xSemaphoreGive(s_mutex);
+}
+
+void carmood_ui_enter_shooter(void)
+{
+    xSemaphoreTake(s_mutex, portMAX_DELAY);
+    /* 特殊模式必须互斥，避免渲染层和输入层状态打架。 */
+    s_muyu_mode      = false;
+    s_muyu_animating = false;
+    s_muyu_tapped    = false;
+    s_shooter_mode = true;
+    s_brick_mode   = false;
+    s_flappy_mode  = false;
+    xSemaphoreGive(s_mutex);
+    shooter_game_init();
+    ESP_LOGI(TAG, "进入打飞机游戏模式");
+}
+
+void carmood_ui_exit_shooter(void)
+{
+    xSemaphoreTake(s_mutex, portMAX_DELAY);
+    s_shooter_mode = false;
+    s_expr_changed = true;
+    xSemaphoreGive(s_mutex);
+    ESP_LOGI(TAG, "退出打飞机游戏模式");
+}
+
+bool carmood_ui_is_shooter_mode(void)
+{
+    xSemaphoreTake(s_mutex, portMAX_DELAY);
+    bool ret = s_shooter_mode;
+    xSemaphoreGive(s_mutex);
+    return ret;
+}
+
+void carmood_ui_enter_brick(void)
+{
+    xSemaphoreTake(s_mutex, portMAX_DELAY);
+    s_muyu_mode      = false;
+    s_muyu_animating = false;
+    s_muyu_tapped    = false;
+    s_shooter_mode   = false;
+    s_brick_mode     = true;
+    s_flappy_mode    = false;
+    xSemaphoreGive(s_mutex);
+    brick_game_init();
+    ESP_LOGI(TAG, "进入打砖块模式");
+}
+
+void carmood_ui_exit_brick(void)
+{
+    xSemaphoreTake(s_mutex, portMAX_DELAY);
+    s_brick_mode = false;
+    s_expr_changed = true;
+    xSemaphoreGive(s_mutex);
+    ESP_LOGI(TAG, "退出打砖块模式");
+}
+
+bool carmood_ui_is_brick_mode(void)
+{
+    xSemaphoreTake(s_mutex, portMAX_DELAY);
+    bool ret = s_brick_mode;
+    xSemaphoreGive(s_mutex);
+    return ret;
+}
+
+void carmood_ui_brick_set_tilt(int32_t lr_val)
+{
+    brick_game_set_tilt(lr_val);
+}
+
+void carmood_ui_brick_step_left(void)
+{
+    brick_game_step_left();
+}
+
+void carmood_ui_brick_step_right(void)
+{
+    brick_game_step_right();
+}
+
+void carmood_ui_enter_flappy(void)
+{
+    xSemaphoreTake(s_mutex, portMAX_DELAY);
+    s_muyu_mode      = false;
+    s_muyu_animating = false;
+    s_muyu_tapped    = false;
+    s_shooter_mode   = false;
+    s_brick_mode     = false;
+    s_flappy_mode    = true;
+    xSemaphoreGive(s_mutex);
+    flappy_game_init();
+    ESP_LOGI(TAG, "进入像素小鸟模式");
+}
+
+void carmood_ui_exit_flappy(void)
+{
+    xSemaphoreTake(s_mutex, portMAX_DELAY);
+    s_flappy_mode = false;
+    s_expr_changed = true;
+    xSemaphoreGive(s_mutex);
+    ESP_LOGI(TAG, "退出像素小鸟模式");
+}
+
+bool carmood_ui_is_flappy_mode(void)
+{
+    xSemaphoreTake(s_mutex, portMAX_DELAY);
+    bool ret = s_flappy_mode;
+    xSemaphoreGive(s_mutex);
+    return ret;
+}
+
+void carmood_ui_flappy_jump(void)
+{
+    flappy_game_jump();
+}
+
+void carmood_ui_shooter_input_left(void)
+{
+    shooter_game_push_input(SHOOTER_INPUT_LEFT);
+}
+
+void carmood_ui_shooter_input_right(void)
+{
+    shooter_game_push_input(SHOOTER_INPUT_RIGHT);
+}
+
+void carmood_ui_shooter_input_fire(void)
+{
+    shooter_game_push_input(SHOOTER_INPUT_FIRE);
+}
+
+void carmood_ui_shooter_input_left_hold(void)
+{
+    shooter_game_push_input(SHOOTER_INPUT_LEFT_HOLD);
+}
+
+void carmood_ui_shooter_input_right_hold(void)
+{
+    shooter_game_push_input(SHOOTER_INPUT_RIGHT_HOLD);
+}
+
+void carmood_ui_shooter_input_release(void)
+{
+    shooter_game_push_input(SHOOTER_INPUT_RELEASE);
 }

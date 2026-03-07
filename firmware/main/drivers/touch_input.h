@@ -28,9 +28,16 @@ typedef struct {
   int64_t gap_ms;
 } touch_input_key_event_t;
 
+typedef enum {
+  TOUCH_SWIPE_NONE = 0,
+  TOUCH_SWIPE_UP,
+  TOUCH_SWIPE_DOWN,
+} touch_swipe_t;
+
 typedef struct {
   touch_input_key_event_t keys[TOUCH_KEY_COUNT];
   touch_input_sample_t samples[TOUCH_KEY_COUNT];
+  touch_swipe_t swipe;
 } touch_input_event_t;
 
 esp_err_t touch_input_init(void);

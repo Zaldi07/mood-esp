@@ -19,6 +19,24 @@ void astra_draw_exit_animation(void)
     static float h     = -8;
     static float h_trg = OLED_HEIGHT + 8;
 
+    /*
+     * 阶段0：黑幕+沙漏从上往下覆盖旧内容
+     * 阶段1（覆盖完成）：直接结束动画，不再做收回阶段
+     *
+     * 原来阶段1之后会进入阶段2让黑幕慢慢收回，这段时间新内容虽然已经
+     * 绘制，但仍被黑色遮罩覆盖，导致用户看到明显的黑屏闪烁。
+     * 改为覆盖完成后直接结束，新内容下一帧立即可见。
+     */
+
+    /* 阶段1：黑幕已完全覆盖，跳过绘制直接结束 */
+    if (astra_exit_animation_status == 1) {
+        astra_exit_animation_finished = true;
+        astra_exit_animation_status = 0;
+        h = -8;
+        h_trg = OLED_HEIGHT + 8;
+        return;
+    }
+
     oled_set_draw_color(0);
     oled_draw_box(0, 0, OLED_WIDTH, (int16_t)h);
     oled_set_draw_color(1);
@@ -81,17 +99,6 @@ void astra_draw_exit_animation(void)
     if (astra_exit_animation_status == 0 && h == h_trg && h_trg == OLED_HEIGHT + 8) {
         astra_exit_animation_status = 1;
         return;
-    }
-    if (astra_exit_animation_status == 1) {
-        h_trg = -8;
-        astra_exit_animation_status = 2;
-        return;
-    }
-    if (astra_exit_animation_status == 2 && h == h_trg && h_trg == -8) {
-        astra_exit_animation_finished = true;
-        astra_exit_animation_status = 0;
-        h = -8;
-        h_trg = OLED_HEIGHT + 8;
     }
 }
 
