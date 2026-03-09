@@ -7,7 +7,6 @@ idf_component_register(
         "app/time_sync.c"
         "ssd1306_oled.c"
         "ui/carmood_ui.c"
-        "ui/layout_renderer.c"
         "ui/face_renderer.c"
         "ui/muyu_renderer.c"
         "ui/brick_game.c"

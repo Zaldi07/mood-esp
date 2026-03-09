@@ -129,8 +129,6 @@ static carmood_display_mode_t carmood_next_display_mode(carmood_display_mode_t m
         case CARMOOD_DISPLAY_MODE_FACE:
             return CARMOOD_DISPLAY_MODE_CLOCK;
         case CARMOOD_DISPLAY_MODE_CLOCK:
-            return CARMOOD_DISPLAY_MODE_LAYOUT;
-        case CARMOOD_DISPLAY_MODE_LAYOUT:
         default:
             return CARMOOD_DISPLAY_MODE_FACE;
     }

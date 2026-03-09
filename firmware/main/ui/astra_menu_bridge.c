@@ -34,12 +34,6 @@ static void on_display_clock_mode(void)
     astra_push_info_bar("时钟模式", 800);
 }
 
-static void on_display_layout_mode(void)
-{
-    carmood_ui_set_display_mode(CARMOOD_DISPLAY_MODE_LAYOUT);
-    astra_push_info_bar("布局页面", 800);
-}
-
 static void init_debug_mode_switch(void)
 {
     s_debug_mode_value = carmood_ui_is_debug_mode();
@@ -104,7 +98,7 @@ static void astra_status_page_loop(void)
 
     snprintf(line, sizeof(line), "显示:%s",
              display_mode == CARMOOD_DISPLAY_MODE_FACE ? "表情" :
-             (display_mode == CARMOOD_DISPLAY_MODE_CLOCK ? "时钟" : "布局"));
+             "时钟");
     oled_draw_UTF8(2, 44, line);
 
     snprintf(line, sizeof(line), "Debug:%s", debug_mode ? "ON" : "OFF");
@@ -154,8 +148,6 @@ void astra_menu_init(void)
         astra_new_button_item("表情模式", on_display_face_mode, flag_icon));
     astra_push_item_to_list(display_menu,
         astra_new_button_item("时钟模式", on_display_clock_mode, flag_icon));
-    astra_push_item_to_list(display_menu,
-        astra_new_button_item("布局页面", on_display_layout_mode, flag_icon));
 
     astra_init_core();
 

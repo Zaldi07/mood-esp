@@ -9,3 +9,13 @@
  * 帧数据由 Python 脚本自动生成。
  */
 void face_render_frame(carmood_expr_t expr, uint32_t t_ms);
+
+/**
+ * 在旧表情和新表情之间做一次短暂的单色抖动过渡，避免状态硬切。
+ * progress_255: 0=全旧帧，255=全新帧。
+ */
+void face_render_transition(carmood_expr_t from_expr,
+                            uint32_t from_t_ms,
+                            carmood_expr_t to_expr,
+                            uint32_t to_t_ms,
+                            uint8_t progress_255);

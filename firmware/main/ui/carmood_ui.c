@@ -14,7 +14,6 @@
 #include "ssd1306_oled.h"
 #include "ui/face_renderer.h"
 #include "ui/muyu_renderer.h"
-#include "ui/layout_renderer.h"
 #include "ui/brick_game.h"
 #include "ui/flappy_game.h"
 #include "ui/shooter_game.h"
@@ -23,6 +22,8 @@ static const char *TAG = "carmood_ui";
 
 /* 目标 30fps = 33ms/帧，OLED 上已足够丝滑 */
 #define ANIM_FRAME_MS 33
+/* 表情状态切换时保留一个很短的过渡窗，弱化硬切感。 */
+#define FACE_TRANSITION_MS 180
 /* 共享状态（由 mutex 保护） */
 static SemaphoreHandle_t s_mutex;
 static volatile carmood_expr_t s_cur_expr     = EXPR_IDLE;
@@ -237,7 +238,11 @@ static void anim_task(void *arg)
 {
     (void)arg;
     carmood_expr_t cur_expr = EXPR_IDLE;
+    carmood_expr_t prev_expr = EXPR_IDLE;
     int64_t anim_start_us = esp_timer_get_time();
+    int64_t prev_anim_start_us = anim_start_us;
+    int64_t transition_start_us = 0;
+    bool face_transition_active = false;
     carmood_display_mode_t last_display_mode = CARMOOD_DISPLAY_MODE_FACE;
 
     ESP_LOGI(TAG, "动画任务启动 (实时绘制)");
@@ -322,10 +327,15 @@ static void anim_task(void *arg)
         /* 检查表情切换 */
         xSemaphoreTake(s_mutex, portMAX_DELAY);
         if (s_expr_changed) {
+            int64_t now_us = esp_timer_get_time();
+            prev_expr = cur_expr;
+            prev_anim_start_us = anim_start_us;
             cur_expr       = s_pending_expr;
             s_cur_expr     = cur_expr;
             s_expr_changed = false;
-            anim_start_us  = esp_timer_get_time();
+            anim_start_us  = now_us;
+            transition_start_us = now_us;
+            face_transition_active = (prev_expr != cur_expr);
             ESP_LOGI(TAG, "切换表情: %d", cur_expr);
         }
         carmood_display_mode_t display_mode = s_display_mode;
@@ -340,17 +350,24 @@ static void anim_task(void *arg)
             vTaskDelay(pdMS_TO_TICKS(200));
             continue;
         }
-        if (display_mode == CARMOOD_DISPLAY_MODE_LAYOUT) {
-            layout_render_page(layout_get_default_page());
-            last_display_mode = display_mode;
-            vTaskDelay(pdMS_TO_TICKS(120));
-            continue;
-        }
         last_display_mode = display_mode;
 
         /* 计算动画时间并实时绘制 */
-        uint32_t t_ms = (uint32_t)((esp_timer_get_time() - anim_start_us) / 1000);
-        face_render_frame(cur_expr, t_ms);
+        int64_t now_us = esp_timer_get_time();
+        uint32_t t_ms = (uint32_t)((now_us - anim_start_us) / 1000);
+        if (face_transition_active) {
+            uint32_t prev_t_ms = (uint32_t)((now_us - prev_anim_start_us) / 1000);
+            uint32_t transition_ms = (uint32_t)((now_us - transition_start_us) / 1000);
+            if (transition_ms >= FACE_TRANSITION_MS) {
+                face_transition_active = false;
+                face_render_frame(cur_expr, t_ms);
+            } else {
+                uint8_t progress = (uint8_t)((transition_ms * 255U) / FACE_TRANSITION_MS);
+                face_render_transition(prev_expr, prev_t_ms, cur_expr, t_ms, progress);
+            }
+        } else {
+            face_render_frame(cur_expr, t_ms);
+        }
         if (debug_mode) {
             draw_overlay(tc, pc);
         }
@@ -377,7 +394,7 @@ static void anim_task(void *arg)
 void carmood_ui_init(void)
 {
     s_mutex = xSemaphoreCreateMutex();
-    xTaskCreatePinnedToCore(anim_task, "anim", 4096, NULL, 5, NULL, 1);
+    xTaskCreatePinnedToCore(anim_task, "anim", 6144, NULL, 5, NULL, 1);
 }
 
 void carmood_ui_set_expression(carmood_expr_t expr)

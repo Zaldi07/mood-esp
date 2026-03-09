@@ -19,7 +19,6 @@ typedef enum {
 typedef enum {
     CARMOOD_DISPLAY_MODE_FACE = 0,
     CARMOOD_DISPLAY_MODE_CLOCK = 1,
-    CARMOOD_DISPLAY_MODE_LAYOUT = 2,
 } carmood_display_mode_t;
 
 /* 启动后台动画任务（在 oled_init() 之后调用一次） */
