@@ -60,20 +60,249 @@ typedef struct {
     bool wait_top_release_after_close;
 } menu_state_t;
 
-/* 触摸单击依次循环切换的表情列表（全部表情，方便调试预览） */
-static const carmood_expr_t k_click_cycle[] = {
-    EXPR_IDLE,
-    EXPR_BLINK,
-    EXPR_HAPPY,
-    EXPR_SLEEPY,
-    EXPR_TURN_LEFT,
-    EXPR_TURN_RIGHT,
-    EXPR_SURPRISED,
-    EXPR_ANGRY,
-};
-#define CLICK_CYCLE_COUNT (int)(sizeof(k_click_cycle) / sizeof(k_click_cycle[0]))
+typedef struct {
+    carmood_expr_t active_expr;
+    carmood_expr_t idle_expr;
+    int64_t idle_started_ms;
+    int64_t next_idle_expr_ms;
+    int64_t interaction_until_ms;
+    int64_t sequence_step_until_ms;
+    uint32_t rng_state;
+    int persona;
+    uint8_t sequence_len;
+    uint8_t sequence_index;
+    carmood_expr_t sequence_exprs[4];
+    uint16_t sequence_durations_ms[4];
+} face_state_t;
 
-static void carmood_handle_top_single_click(int *click_idx)
+typedef enum {
+    CARMOOD_PET_PERSONA_DEFAULT = 0,
+    CARMOOD_PET_PERSONA_PLAYFUL,
+    CARMOOD_PET_PERSONA_SLEEPY,
+} carmood_pet_persona_t;
+
+#define CARMOOD_IDLE_STEP_MIN_MS        2200
+#define CARMOOD_IDLE_STEP_JITTER_MS     2600
+#define CARMOOD_IDLE_SLEEPY_AFTER_MS   90000
+#define CARMOOD_SEQ_MAX_STEPS              4
+
+static void carmood_restore_idle(face_state_t *face_state, int64_t now_ms);
+
+static uint32_t carmood_next_random(face_state_t *face_state)
+{
+    face_state->rng_state = face_state->rng_state * 1664525U + 1013904223U;
+    return face_state->rng_state;
+}
+
+static void carmood_cancel_sequence(face_state_t *face_state)
+{
+    face_state->sequence_len = 0;
+    face_state->sequence_index = 0;
+    face_state->sequence_step_until_ms = -1;
+    face_state->interaction_until_ms = -1;
+}
+
+static void carmood_apply_face_expr(face_state_t *face_state, carmood_expr_t expr)
+{
+    if (face_state->active_expr == expr) {
+        return;
+    }
+    face_state->active_expr = expr;
+    carmood_ui_set_expression(expr);
+}
+
+static void carmood_start_sequence(face_state_t *face_state,
+                                   int64_t now_ms,
+                                   const carmood_expr_t *exprs,
+                                   const uint16_t *durations_ms,
+                                   uint8_t len)
+{
+    if (len == 0 || len > CARMOOD_SEQ_MAX_STEPS) {
+        carmood_cancel_sequence(face_state);
+        return;
+    }
+
+    face_state->sequence_len = len;
+    face_state->sequence_index = 0;
+    for (uint8_t i = 0; i < len; ++i) {
+        face_state->sequence_exprs[i] = exprs[i];
+        face_state->sequence_durations_ms[i] = durations_ms[i];
+    }
+
+    carmood_apply_face_expr(face_state, face_state->sequence_exprs[0]);
+    face_state->sequence_step_until_ms = now_ms + face_state->sequence_durations_ms[0];
+    face_state->interaction_until_ms = face_state->sequence_step_until_ms;
+}
+
+static bool carmood_update_sequence(face_state_t *face_state,
+                                    int64_t now_ms,
+                                    bool direction_override_active)
+{
+    if (direction_override_active || face_state->sequence_len == 0) {
+        return false;
+    }
+
+    if (now_ms < face_state->sequence_step_until_ms) {
+        return true;
+    }
+
+    face_state->sequence_index++;
+    if (face_state->sequence_index >= face_state->sequence_len) {
+        carmood_cancel_sequence(face_state);
+        carmood_restore_idle(face_state, now_ms);
+        return false;
+    }
+
+    carmood_apply_face_expr(face_state,
+                            face_state->sequence_exprs[face_state->sequence_index]);
+    face_state->sequence_step_until_ms =
+        now_ms + face_state->sequence_durations_ms[face_state->sequence_index];
+    face_state->interaction_until_ms = face_state->sequence_step_until_ms;
+    return true;
+}
+
+static void carmood_reset_idle(face_state_t *face_state, int64_t now_ms)
+{
+    int step_min = CARMOOD_IDLE_STEP_MIN_MS;
+    int step_jitter = CARMOOD_IDLE_STEP_JITTER_MS;
+
+    if (face_state->persona == CARMOOD_PET_PERSONA_PLAYFUL) {
+        step_min = 1400;
+        step_jitter = 1800;
+    } else if (face_state->persona == CARMOOD_PET_PERSONA_SLEEPY) {
+        step_min = 3200;
+        step_jitter = 3200;
+    }
+
+    face_state->idle_started_ms = now_ms;
+    face_state->next_idle_expr_ms = now_ms + step_min +
+                                    (int64_t)(carmood_next_random(face_state) %
+                                              step_jitter);
+}
+
+static void carmood_start_idle(face_state_t *face_state, int64_t now_ms)
+{
+    carmood_cancel_sequence(face_state);
+    face_state->idle_expr = EXPR_IDLE;
+    carmood_reset_idle(face_state, now_ms);
+    carmood_apply_face_expr(face_state, face_state->idle_expr);
+}
+
+static void carmood_start_idle_action(face_state_t *face_state, int64_t now_ms)
+{
+    bool playful = face_state->persona == CARMOOD_PET_PERSONA_PLAYFUL;
+    bool sleepy_persona = face_state->persona == CARMOOD_PET_PERSONA_SLEEPY;
+    bool sleepy_bias = (now_ms - face_state->idle_started_ms) >=
+                       (sleepy_persona ? CARMOOD_IDLE_SLEEPY_AFTER_MS / 3 :
+                                         CARMOOD_IDLE_SLEEPY_AFTER_MS);
+    uint32_t roll = carmood_next_random(face_state) %
+                    (sleepy_bias ? 14U : (playful ? 13U : 11U));
+
+    if (sleepy_bias) {
+        if (roll < (sleepy_persona ? 4U : 3U)) {
+            static const carmood_expr_t exprs[] = {
+                EXPR_SLEEPY, EXPR_BLINK, EXPR_SLEEPY
+            };
+            static const uint16_t durations[] = {1200, 320, 1100};
+            carmood_start_sequence(face_state, now_ms, exprs, durations, 3);
+            face_state->idle_expr = EXPR_SLEEPY;
+            return;
+        }
+        if (roll < (sleepy_persona ? 7U : 5U)) {
+            static const carmood_expr_t exprs[] = {
+                EXPR_BLINK, EXPR_IDLE, EXPR_BLINK
+            };
+            static const uint16_t durations[] = {280, 180, 320};
+            carmood_start_sequence(face_state, now_ms, exprs, durations, 3);
+            face_state->idle_expr = EXPR_BLINK;
+            return;
+        }
+    }
+
+    if (playful && roll < 3U) {
+        static const carmood_expr_t exprs[] = {
+            EXPR_HAPPY, EXPR_BLINK, EXPR_HAPPY
+        };
+        static const uint16_t durations[] = {650, 220, 700};
+        carmood_start_sequence(face_state, now_ms, exprs, durations, 3);
+        face_state->idle_expr = EXPR_HAPPY;
+        return;
+    }
+
+    if (roll < (playful ? 5U : 3U)) {
+        static const carmood_expr_t exprs[] = {
+            EXPR_BLINK, EXPR_IDLE, EXPR_BLINK
+        };
+        static const uint16_t durations[] = {260, 140, 320};
+        carmood_start_sequence(face_state, now_ms, exprs, durations, 3);
+        face_state->idle_expr = EXPR_BLINK;
+        return;
+    }
+
+    if (roll < (playful ? 8U : 6U)) {
+        static const carmood_expr_t exprs[] = {
+            EXPR_SURPRISED, EXPR_IDLE
+        };
+        uint16_t durations[] = {playful ? 520 : 680, playful ? 300 : 420};
+        carmood_start_sequence(face_state, now_ms, exprs, durations, 2);
+        face_state->idle_expr = EXPR_SURPRISED;
+        return;
+    }
+
+    if (sleepy_bias && roll < 11U) {
+        static const carmood_expr_t exprs[] = {
+            EXPR_SLEEPY, EXPR_IDLE
+        };
+        static const uint16_t durations[] = {1300, 600};
+        carmood_start_sequence(face_state, now_ms, exprs, durations, 2);
+        face_state->idle_expr = EXPR_SLEEPY;
+        return;
+    }
+
+    if (playful && roll < 11U) {
+        static const carmood_expr_t exprs[] = {
+            EXPR_HAPPY, EXPR_IDLE
+        };
+        static const uint16_t durations[] = {900, 420};
+        carmood_start_sequence(face_state, now_ms, exprs, durations, 2);
+        face_state->idle_expr = EXPR_HAPPY;
+        return;
+    }
+
+    face_state->idle_expr = sleepy_bias && sleepy_persona ? EXPR_SLEEPY : EXPR_IDLE;
+    carmood_cancel_sequence(face_state);
+    carmood_apply_face_expr(face_state, face_state->idle_expr);
+}
+
+static void carmood_update_idle(face_state_t *face_state,
+                                int64_t now_ms,
+                                bool direction_override_active)
+{
+    if (direction_override_active) {
+        return;
+    }
+
+    if (carmood_update_sequence(face_state, now_ms, direction_override_active)) {
+        return;
+    }
+
+    if (now_ms < face_state->next_idle_expr_ms) {
+        return;
+    }
+
+    carmood_start_idle_action(face_state, now_ms);
+    carmood_reset_idle(face_state, now_ms);
+}
+
+static void carmood_restore_idle(face_state_t *face_state, int64_t now_ms)
+{
+    carmood_cancel_sequence(face_state);
+    face_state->idle_expr = EXPR_IDLE;
+    carmood_reset_idle(face_state, now_ms);
+    carmood_apply_face_expr(face_state, face_state->idle_expr);
+}
+
+static void carmood_trigger_interaction(face_state_t *face_state, int64_t now_ms)
 {
     if (carmood_ui_is_muyu_mode()) {
         carmood_ui_tap_muyu();
@@ -86,9 +315,60 @@ static void carmood_handle_top_single_click(int *click_idx)
         return;
     }
 
-    *click_idx = (*click_idx + 1) % CLICK_CYCLE_COUNT;
-    carmood_ui_set_expression(k_click_cycle[*click_idx]);
-    ESP_LOGI(TAG, "单击切换表情: %d", k_click_cycle[*click_idx]);
+    uint32_t roll = carmood_next_random(face_state) %
+                    (face_state->persona == CARMOOD_PET_PERSONA_SLEEPY ? 5U : 4U);
+    carmood_reset_idle(face_state, now_ms);
+
+    switch (roll) {
+        case 0:
+        {
+            static const carmood_expr_t exprs[] = {
+                EXPR_SURPRISED, EXPR_HAPPY
+            };
+            static const uint16_t durations[] = {420, 920};
+            carmood_start_sequence(face_state, now_ms, exprs, durations, 2);
+            break;
+        }
+        case 1:
+        {
+            static const carmood_expr_t exprs[] = {
+                EXPR_SURPRISED, EXPR_BLINK
+            };
+            static const uint16_t durations[] = {900, 320};
+            carmood_start_sequence(face_state, now_ms, exprs, durations, 2);
+            break;
+        }
+        case 2:
+        {
+            static const carmood_expr_t exprs[] = {
+                EXPR_ANGRY, EXPR_BLINK
+            };
+            static const uint16_t durations[] = {820, 260};
+            carmood_start_sequence(face_state, now_ms, exprs, durations, 2);
+            break;
+        }
+        case 3:
+            if (face_state->persona == CARMOOD_PET_PERSONA_SLEEPY) {
+                static const carmood_expr_t exprs[] = {
+                    EXPR_SLEEPY, EXPR_BLINK, EXPR_SLEEPY
+                };
+                static const uint16_t durations[] = {900, 260, 950};
+                carmood_start_sequence(face_state, now_ms, exprs, durations, 3);
+                break;
+            }
+            /* fall through */
+        default:
+        {
+            static const carmood_expr_t exprs[] = {
+                EXPR_HAPPY, EXPR_BLINK
+            };
+            static const uint16_t durations[] = {720, 260};
+            carmood_start_sequence(face_state, now_ms, exprs, durations, 2);
+            break;
+        }
+    }
+
+    ESP_LOGI(TAG, "触发桌宠互动: %d", face_state->active_expr);
 }
 
 static void carmood_open_menu(app_state_t *app_state,
@@ -134,6 +414,15 @@ static carmood_display_mode_t carmood_next_display_mode(carmood_display_mode_t m
     }
 }
 
+static void carmood_set_persona(face_state_t *face_state,
+                                carmood_pet_persona_t persona,
+                                int64_t now_ms)
+{
+    face_state->persona = (int)persona;
+    carmood_restore_idle(face_state, now_ms);
+    ESP_LOGI(TAG, "切换桌宠人格: %d", (int)persona);
+}
+
 void carmood_app_run(void)
 {
     ESP_LOGI(TAG, "CarMood 启动");
@@ -146,7 +435,6 @@ void carmood_app_run(void)
 
     /* 启动动画后台任务 */
     carmood_ui_init();
-    carmood_ui_set_expression(EXPR_IDLE);
 
     ret = carmood_time_sync_once();
     if (ret != ESP_OK && ret != ESP_ERR_NOT_SUPPORTED) {
@@ -172,9 +460,17 @@ void carmood_app_run(void)
         return;
     }
 
-    int     click_idx  = 0;
     app_state_t app_state = APP_STATE_NORMAL;
     menu_state_t menu_state = {0};
+    face_state_t face_state = {
+        .active_expr = EXPR_IDLE,
+        .idle_expr = EXPR_IDLE,
+        .idle_started_ms = esp_timer_get_time() / 1000,
+        .next_idle_expr_ms = -1,
+        .interaction_until_ms = -1,
+        .rng_state = (uint32_t)esp_timer_get_time(),
+        .persona = CARMOOD_PET_PERSONA_DEFAULT,
+    };
 #if CONFIG_CARMOOD_DEBUG_PERIODIC_LOG
     int64_t last_dir_log_ms = 0;
     int64_t last_steady_log_ms = 0;
@@ -188,6 +484,9 @@ void carmood_app_run(void)
     int32_t prev_dx = 0;
     int32_t prev_dy = 0;
     int32_t prev_dz = 0;
+    bool direction_override_active = false;
+
+    carmood_start_idle(&face_state, face_state.idle_started_ms);
 
     while (1) {
         touch_input_event_t touch_event = {};
@@ -263,7 +562,7 @@ void carmood_app_run(void)
                 astra_menu_close();
                 if (carmood_ui_is_muyu_mode()) {
                     carmood_ui_exit_muyu();
-                    carmood_ui_set_expression(k_click_cycle[click_idx]);
+                    carmood_restore_idle(&face_state, now_ms);
                 } else {
                     carmood_ui_enter_muyu();
                 }
@@ -282,7 +581,7 @@ void carmood_app_run(void)
                 astra_menu_close();
                 if (carmood_ui_is_shooter_mode()) {
                     carmood_ui_exit_shooter();
-                    carmood_ui_set_expression(k_click_cycle[click_idx]);
+                    carmood_restore_idle(&face_state, now_ms);
                 } else {
                     carmood_ui_enter_shooter();
                 }
@@ -301,7 +600,7 @@ void carmood_app_run(void)
                 astra_menu_close();
                 if (carmood_ui_is_brick_mode()) {
                     carmood_ui_exit_brick();
-                    carmood_ui_set_expression(k_click_cycle[click_idx]);
+                    carmood_restore_idle(&face_state, now_ms);
                 } else {
                     carmood_ui_enter_brick();
                 }
@@ -320,7 +619,7 @@ void carmood_app_run(void)
                 astra_menu_close();
                 if (carmood_ui_is_flappy_mode()) {
                     carmood_ui_exit_flappy();
-                    carmood_ui_set_expression(k_click_cycle[click_idx]);
+                    carmood_restore_idle(&face_state, now_ms);
                 } else {
                     carmood_ui_enter_flappy();
                 }
@@ -343,7 +642,32 @@ void carmood_app_run(void)
                 if (ret != ESP_OK) {
                     ESP_LOGW(TAG, "方向标定失败: %s", esp_err_to_name(ret));
                 }
-                carmood_ui_set_expression(k_click_cycle[click_idx]);
+                carmood_restore_idle(&face_state, now_ms);
+                carmood_ui_resume_animation();
+                menu_state.wait_top_release_after_open = false;
+                menu_state.top_hold_handled = false;
+                pending_top_click_ms = -1;
+                vTaskDelay(pdMS_TO_TICKS(CONFIG_CARMOOD_TOUCH_SAMPLE_MS));
+                continue;
+            }
+
+            astra_pet_persona_action_t persona_action = astra_menu_get_pet_persona_action();
+            if (persona_action != ASTRA_PET_PERSONA_NONE) {
+                astra_menu_consume_actions();
+                astra_menu_close();
+                app_state = APP_STATE_NORMAL;
+                switch (persona_action) {
+                    case ASTRA_PET_PERSONA_PLAYFUL:
+                        carmood_set_persona(&face_state, CARMOOD_PET_PERSONA_PLAYFUL, now_ms);
+                        break;
+                    case ASTRA_PET_PERSONA_SLEEPY:
+                        carmood_set_persona(&face_state, CARMOOD_PET_PERSONA_SLEEPY, now_ms);
+                        break;
+                    case ASTRA_PET_PERSONA_DEFAULT:
+                    default:
+                        carmood_set_persona(&face_state, CARMOOD_PET_PERSONA_DEFAULT, now_ms);
+                        break;
+                }
                 carmood_ui_resume_animation();
                 menu_state.wait_top_release_after_open = false;
                 menu_state.top_hold_handled = false;
@@ -363,7 +687,7 @@ void carmood_app_run(void)
                 top_key.press_ms >= CONFIG_CARMOOD_MENU_BACK_HOLD_MS) {
                 pending_top_click_ms = -1;
                 carmood_ui_exit_shooter();
-                carmood_ui_set_expression(k_click_cycle[click_idx]);
+                carmood_restore_idle(&face_state, now_ms);
                 ESP_LOGI(TAG, "顶部长按退出打飞机游戏");
                 vTaskDelay(pdMS_TO_TICKS(CONFIG_CARMOOD_TOUCH_SAMPLE_MS));
                 continue;
@@ -420,7 +744,7 @@ void carmood_app_run(void)
                 top_key.press_ms >= CONFIG_CARMOOD_MENU_BACK_HOLD_MS) {
                 pending_top_click_ms = -1;
                 carmood_ui_exit_brick();
-                carmood_ui_set_expression(k_click_cycle[click_idx]);
+                carmood_restore_idle(&face_state, now_ms);
                 ESP_LOGI(TAG, "顶部长按退出打砖块");
                 vTaskDelay(pdMS_TO_TICKS(CONFIG_CARMOOD_TOUCH_SAMPLE_MS));
                 continue;
@@ -467,7 +791,7 @@ void carmood_app_run(void)
                 pending_top_click_ms = -1;
                 flappy_top_was_pressed = false;
                 carmood_ui_exit_flappy();
-                carmood_ui_set_expression(k_click_cycle[click_idx]);
+                carmood_restore_idle(&face_state, now_ms);
                 ESP_LOGI(TAG, "顶部长按退出像素小鸟");
                 vTaskDelay(pdMS_TO_TICKS(CONFIG_CARMOOD_TOUCH_SAMPLE_MS));
                 continue;
@@ -513,7 +837,7 @@ void carmood_app_run(void)
             top_key.press_ms >= CONFIG_CARMOOD_MENU_BACK_HOLD_MS) {
             pending_top_click_ms = -1;
             carmood_ui_exit_muyu();
-            carmood_ui_set_expression(k_click_cycle[click_idx]);
+            carmood_restore_idle(&face_state, now_ms);
             ESP_LOGI(TAG, "顶部长按退出功德木鱼");
             vTaskDelay(pdMS_TO_TICKS(CONFIG_CARMOOD_TOUCH_SAMPLE_MS));
             continue;
@@ -529,7 +853,7 @@ void carmood_app_run(void)
 
         if (app_state == APP_STATE_NORMAL && in_muyu_mode && top_key.valid_click) {
             pending_top_click_ms = -1;
-            carmood_handle_top_single_click(&click_idx);
+            carmood_trigger_interaction(&face_state, now_ms);
         }
 
         if (app_state == APP_STATE_NORMAL &&
@@ -546,8 +870,17 @@ void carmood_app_run(void)
             pending_top_click_ms >= 0 &&
             !top_key.released &&
             now_ms - pending_top_click_ms > CONFIG_CARMOOD_TOP_DOUBLE_CLICK_MS) {
-            carmood_handle_top_single_click(&click_idx);
+            carmood_trigger_interaction(&face_state, now_ms);
             pending_top_click_ms = -1;
+        }
+
+        if (app_state == APP_STATE_NORMAL &&
+            !in_muyu_mode &&
+            !in_flappy_mode &&
+            face_state.interaction_until_ms >= 0 &&
+            now_ms >= face_state.interaction_until_ms &&
+            !direction_override_active) {
+            carmood_restore_idle(&face_state, now_ms);
         }
 
 #if CONFIG_CARMOOD_DEBUG_PERIODIC_LOG
@@ -599,12 +932,14 @@ void carmood_app_run(void)
 
                     /* 转弯时自动切换对应动画 */
                     if (turn_char == 'L') {
-                        carmood_ui_set_expression(EXPR_TURN_LEFT);
+                        direction_override_active = true;
+                        carmood_apply_face_expr(&face_state, EXPR_TURN_LEFT);
                     } else if (turn_char == 'R') {
-                        carmood_ui_set_expression(EXPR_TURN_RIGHT);
+                        direction_override_active = true;
+                        carmood_apply_face_expr(&face_state, EXPR_TURN_RIGHT);
                     } else {
-                        /* 回正时恢复触摸选中的表情 */
-                        carmood_ui_set_expression(k_click_cycle[click_idx]);
+                        direction_override_active = false;
+                        carmood_restore_idle(&face_state, now_ms);
                     }
 
                     ESP_LOGI(TAG, "方向变化: %c/%c (lr=%ld fb=%ld)",
@@ -632,16 +967,31 @@ void carmood_app_run(void)
 #endif
             } else if (ret == ESP_OK) {
                 carmood_ui_set_motion_input(0, 0, 0);
+                if (direction_override_active) {
+                    direction_override_active = false;
+                    carmood_restore_idle(&face_state, now_ms);
+                }
 #if CONFIG_CARMOOD_DEBUG_PERIODIC_LOG
                 ESP_LOGI(TAG, "LIS3DH xyz(raw): x=%d y=%d z=%d", ax, ay, az);
 #endif
             } else {
                 carmood_ui_set_motion_input(0, 0, 0);
+                if (direction_override_active) {
+                    direction_override_active = false;
+                    carmood_restore_idle(&face_state, now_ms);
+                }
                 ESP_LOGW(TAG, "读取 LIS3DH xyz 失败: %s", esp_err_to_name(ret));
             }
 #if CONFIG_CARMOOD_DEBUG_PERIODIC_LOG
             last_lis3dh_log_ms = now_ms;
 #endif
+        }
+
+        if (app_state == APP_STATE_NORMAL &&
+            !in_muyu_mode &&
+            !in_flappy_mode &&
+            !direction_override_active) {
+            carmood_update_idle(&face_state, now_ms, direction_override_active);
         }
 
         vTaskDelay(pdMS_TO_TICKS(CONFIG_CARMOOD_TOUCH_SAMPLE_MS));

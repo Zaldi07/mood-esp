@@ -89,6 +89,8 @@ static bool get_glyph_5x7(char c, uint8_t glyph[5])
         case '8': { uint8_t g[5]={0x36,0x49,0x49,0x49,0x36}; memcpy(glyph,g,5); return true; }
         case '9': { uint8_t g[5]={0x06,0x49,0x49,0x29,0x1E}; memcpy(glyph,g,5); return true; }
         case ':': { uint8_t g[5]={0x00,0x36,0x36,0x00,0x00}; memcpy(glyph,g,5); return true; }
+        case '/': { uint8_t g[5]={0x20,0x10,0x08,0x04,0x02}; memcpy(glyph,g,5); return true; }
+        case '-': { uint8_t g[5]={0x08,0x08,0x08,0x08,0x08}; memcpy(glyph,g,5); return true; }
         default:    return false;
     }
 }
@@ -134,35 +136,56 @@ static void draw_overlay(char tc, char pc)
     draw_text(0, 0, text, 1);
 }
 
+static bool format_clock_strings(int64_t now_us,
+                                 char time_buf[6],
+                                 char date_buf[6],
+                                 bool *wifi_ready_out)
+{
+    time_t now_s = time(NULL);
+    bool is_time_valid = (now_s >= 1704067200); /* >= 2024-01-01，认为已完成校时 */
+
+    strcpy(time_buf, "00:00");
+    strcpy(date_buf, "--/--");
+
+    if (is_time_valid) {
+        struct tm tm_now;
+        localtime_r(&now_s, &tm_now);
+        time_buf[0] = '0' + (tm_now.tm_hour / 10);
+        time_buf[1] = '0' + (tm_now.tm_hour % 10);
+        time_buf[3] = '0' + (tm_now.tm_min / 10);
+        time_buf[4] = '0' + (tm_now.tm_min % 10);
+
+        date_buf[0] = '0' + ((tm_now.tm_mon + 1) / 10);
+        date_buf[1] = '0' + ((tm_now.tm_mon + 1) % 10);
+        date_buf[3] = '0' + (tm_now.tm_mday / 10);
+        date_buf[4] = '0' + (tm_now.tm_mday % 10);
+    } else {
+        /* 未校时时，显示运行时长 MM:SS */
+        uint32_t sec = (uint32_t)(now_us / 1000000ULL);
+        uint32_t mm = (sec / 60U) % 100U;
+        uint32_t ss = sec % 60U;
+        time_buf[0] = '0' + (mm / 10U);
+        time_buf[1] = '0' + (mm % 10U);
+        time_buf[3] = '0' + (ss / 10U);
+        time_buf[4] = '0' + (ss % 10U);
+    }
+
+    *wifi_ready_out = carmood_time_sync_is_synced() || is_time_valid;
+    return is_time_valid;
+}
+
 /* ------------------------------------------------------------------ */
 /* 动画后台任务（Core 1，30fps 实时绘制）                                */
 /* ------------------------------------------------------------------ */
 
 static void draw_clock(int64_t now_us)
 {
-    char buf[6] = "00:00";
-    time_t now_s = time(NULL);
-    bool is_time_valid = (now_s >= 1704067200); /* >= 2024-01-01，认为已完成校时 */
-    if (is_time_valid) {
-        struct tm tm_now;
-        localtime_r(&now_s, &tm_now);
-        buf[0] = '0' + (tm_now.tm_hour / 10);
-        buf[1] = '0' + (tm_now.tm_hour % 10);
-        buf[3] = '0' + (tm_now.tm_min / 10);
-        buf[4] = '0' + (tm_now.tm_min % 10);
-    } else {
-        /* 未校时时，显示运行时长 MM:SS */
-        uint32_t sec = (uint32_t)(now_us / 1000000ULL);
-        uint32_t mm = (sec / 60U) % 100U;
-        uint32_t ss = sec % 60U;
-        buf[0] = '0' + (mm / 10U);
-        buf[1] = '0' + (mm % 10U);
-        buf[3] = '0' + (ss / 10U);
-        buf[4] = '0' + (ss % 10U);
-    }
+    char buf[6];
+    char unused_date_buf[6];
+    bool wifi_ready = false;
+    format_clock_strings(now_us, buf, unused_date_buf, &wifi_ready);
 
     int x = OLED_WIDTH - 5 * 6;
-    bool wifi_ready = carmood_time_sync_is_synced() || is_time_valid;
     int wifi_x = x - 10;
     for (int py = 0; py < 8; py++)
         for (int px = wifi_x - 1; px < OLED_WIDTH; px++)
@@ -190,39 +213,25 @@ static void draw_clock(int64_t now_us)
 static void draw_clock_fullscreen(int64_t now_us, bool force)
 {
     static char s_last_buf[6] = "";
+    static char s_last_date[6] = "";
     static bool s_last_wifi_ready = false;
-    char buf[6] = "00:00";
-    time_t now_s = time(NULL);
-    bool is_time_valid = (now_s >= 1704067200);
-
-    if (is_time_valid) {
-        struct tm tm_now;
-        localtime_r(&now_s, &tm_now);
-        buf[0] = '0' + (tm_now.tm_hour / 10);
-        buf[1] = '0' + (tm_now.tm_hour % 10);
-        buf[3] = '0' + (tm_now.tm_min / 10);
-        buf[4] = '0' + (tm_now.tm_min % 10);
-    } else {
-        uint32_t sec = (uint32_t)(now_us / 1000000ULL);
-        uint32_t mm = (sec / 60U) % 100U;
-        uint32_t ss = sec % 60U;
-        buf[0] = '0' + (mm / 10U);
-        buf[1] = '0' + (mm % 10U);
-        buf[3] = '0' + (ss / 10U);
-        buf[4] = '0' + (ss % 10U);
-    }
-
-    bool wifi_ready = carmood_time_sync_is_synced() || is_time_valid;
+    char buf[6];
+    char date_buf[6];
+    bool wifi_ready = false;
+    format_clock_strings(now_us, buf, date_buf, &wifi_ready);
     if (!force &&
         strcmp(buf, s_last_buf) == 0 &&
+        strcmp(date_buf, s_last_date) == 0 &&
         wifi_ready == s_last_wifi_ready) {
         return;
     }
 
     strcpy(s_last_buf, buf);
+    strcpy(s_last_date, date_buf);
     s_last_wifi_ready = wifi_ready;
 
     oled_clear_buf();
+    draw_text(0, 0, date_buf, 1);
     draw_text_center(18, buf, 3);
 
     if (wifi_ready) {

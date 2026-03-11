@@ -21,6 +21,7 @@ static bool s_action_toggle_brick;
 static bool s_action_toggle_flappy;
 static bool s_action_run_calibration;
 static bool s_debug_mode_value;
+static astra_pet_persona_action_t s_pet_persona_action;
 
 static void on_display_face_mode(void)
 {
@@ -68,6 +69,21 @@ static void on_flappy_button(void)
 static void on_calibration_button(void)
 {
     s_action_run_calibration = true;
+}
+
+static void on_pet_persona_default(void)
+{
+    s_pet_persona_action = ASTRA_PET_PERSONA_DEFAULT;
+}
+
+static void on_pet_persona_playful(void)
+{
+    s_pet_persona_action = ASTRA_PET_PERSONA_PLAYFUL;
+}
+
+static void on_pet_persona_sleepy(void)
+{
+    s_pet_persona_action = ASTRA_PET_PERSONA_SLEEPY;
 }
 
 static void astra_status_page_loop(void)
@@ -126,10 +142,12 @@ void astra_menu_init(void)
     astra_list_item_t *root = astra_get_root_list();
     astra_list_item_t *game_menu = astra_new_list_item("游戏选择", list_icon);
     astra_list_item_t *display_menu = astra_new_list_item("显示模式", list_icon);
+    astra_list_item_t *pet_menu = astra_new_list_item("桌宠人格", list_icon);
     astra_push_item_to_list(root, game_menu);
     astra_push_item_to_list(root,
         astra_new_button_item("方向标定", on_calibration_button, flag_icon));
     astra_push_item_to_list(root, display_menu);
+    astra_push_item_to_list(root, pet_menu);
     astra_push_item_to_list(root,
         astra_new_switch_item("DEBUG模式", &s_debug_mode_value,
                               init_debug_mode_switch, on_debug_mode_changed,
@@ -148,6 +166,12 @@ void astra_menu_init(void)
         astra_new_button_item("表情模式", on_display_face_mode, flag_icon));
     astra_push_item_to_list(display_menu,
         astra_new_button_item("时钟模式", on_display_clock_mode, flag_icon));
+    astra_push_item_to_list(pet_menu,
+        astra_new_button_item("默认", on_pet_persona_default, flag_icon));
+    astra_push_item_to_list(pet_menu,
+        astra_new_button_item("活泼", on_pet_persona_playful, flag_icon));
+    astra_push_item_to_list(pet_menu,
+        astra_new_button_item("困困", on_pet_persona_sleepy, flag_icon));
 
     astra_init_core();
 
@@ -164,6 +188,7 @@ void astra_menu_open(void)
     s_action_toggle_brick     = false;
     s_action_toggle_flappy    = false;
     s_action_run_calibration  = false;
+    s_pet_persona_action      = ASTRA_PET_PERSONA_NONE;
 
     /* 重置选择状态 */
     astra_init_list();
@@ -239,6 +264,11 @@ bool astra_menu_should_toggle_flappy(void)
     return s_action_toggle_flappy;
 }
 
+astra_pet_persona_action_t astra_menu_get_pet_persona_action(void)
+{
+    return s_pet_persona_action;
+}
+
 void astra_menu_consume_actions(void)
 {
     s_action_toggle_muyu     = false;
@@ -246,4 +276,5 @@ void astra_menu_consume_actions(void)
     s_action_toggle_brick    = false;
     s_action_toggle_flappy   = false;
     s_action_run_calibration = false;
+    s_pet_persona_action     = ASTRA_PET_PERSONA_NONE;
 }

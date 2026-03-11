@@ -7,6 +7,13 @@
 extern "C" {
 #endif
 
+typedef enum {
+    ASTRA_PET_PERSONA_NONE = 0,
+    ASTRA_PET_PERSONA_DEFAULT,
+    ASTRA_PET_PERSONA_PLAYFUL,
+    ASTRA_PET_PERSONA_SLEEPY,
+} astra_pet_persona_action_t;
+
 void astra_menu_init(void);
 void astra_menu_open(void);
 void astra_menu_close(void);
@@ -23,6 +30,7 @@ bool astra_menu_should_toggle_muyu(void);
 bool astra_menu_should_toggle_shooter(void);
 bool astra_menu_should_toggle_brick(void);
 bool astra_menu_should_toggle_flappy(void);
+astra_pet_persona_action_t astra_menu_get_pet_persona_action(void);
 void astra_menu_consume_actions(void);
 
 #ifdef __cplusplus
