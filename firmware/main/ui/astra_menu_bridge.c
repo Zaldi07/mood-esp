@@ -35,6 +35,18 @@ static void on_display_clock_mode(void)
     astra_push_info_bar("时钟模式", 800);
 }
 
+static void on_screen_sleep_always_on(void)
+{
+    carmood_ui_set_screen_sleep_mode(CARMOOD_SCREEN_SLEEP_MODE_ALWAYS_ON);
+    astra_push_info_bar("常亮模式", 800);
+}
+
+static void on_screen_sleep_auto_off(void)
+{
+    carmood_ui_set_screen_sleep_mode(CARMOOD_SCREEN_SLEEP_MODE_AUTO_OFF_5S);
+    astra_push_info_bar("5秒息屏", 800);
+}
+
 static void init_debug_mode_switch(void)
 {
     s_debug_mode_value = carmood_ui_is_debug_mode();
@@ -86,12 +98,29 @@ static void on_pet_persona_sleepy(void)
     s_pet_persona_action = ASTRA_PET_PERSONA_SLEEPY;
 }
 
+static void on_pet_persona_tsundere(void)
+{
+    s_pet_persona_action = ASTRA_PET_PERSONA_TSUNDERE;
+}
+
+static void on_pet_persona_curious(void)
+{
+    s_pet_persona_action = ASTRA_PET_PERSONA_CURIOUS;
+}
+
+static void on_pet_persona_cool(void)
+{
+    s_pet_persona_action = ASTRA_PET_PERSONA_COOL;
+}
+
 static void astra_status_page_loop(void)
 {
     char turn_char = 'C';
     char pitch_char = 'N';
     bool muyu_mode = false;
     carmood_display_mode_t display_mode = carmood_ui_get_display_mode();
+    carmood_screen_sleep_mode_t screen_sleep_mode =
+        carmood_ui_get_screen_sleep_mode();
     bool debug_mode = carmood_ui_is_debug_mode();
     char line[24];
     uint32_t uptime_s = (uint32_t)(esp_timer_get_time() / 1000000ULL);
@@ -117,19 +146,22 @@ static void astra_status_page_loop(void)
              "时钟");
     oled_draw_UTF8(2, 44, line);
 
-    snprintf(line, sizeof(line), "Debug:%s", debug_mode ? "ON" : "OFF");
-    oled_draw_UTF8(2, 56, line);
+    snprintf(line, sizeof(line), "息屏:%s",
+             screen_sleep_mode == CARMOOD_SCREEN_SLEEP_MODE_ALWAYS_ON ? "常亮" :
+             "5秒");
+    oled_draw_UTF8(2, 54, line);
 
-    snprintf(line, sizeof(line), "方向:%c/%c", turn_char, pitch_char);
+    snprintf(line, sizeof(line), "Debug:%s", debug_mode ? "ON" : "OFF");
     oled_draw_UTF8(66, 24, line);
 
-    snprintf(line, sizeof(line), "内存:%luK", (unsigned long)heap_kb);
+    snprintf(line, sizeof(line), "方向:%c/%c", turn_char, pitch_char);
     oled_draw_UTF8(66, 34, line);
 
-    snprintf(line, sizeof(line), "Run:%lum", (unsigned long)uptime_m);
-    oled_draw_UTF8(60, 44, line);
+    snprintf(line, sizeof(line), "内存:%luK", (unsigned long)heap_kb);
+    oled_draw_UTF8(66, 44, line);
 
-    oled_draw_UTF8(50, 56, "长按顶部返回");
+    snprintf(line, sizeof(line), "Run:%lum", (unsigned long)uptime_m);
+    oled_draw_UTF8(66, 54, line);
 }
 
 void astra_menu_init(void)
@@ -143,17 +175,25 @@ void astra_menu_init(void)
     astra_list_item_t *game_menu = astra_new_list_item("游戏选择", list_icon);
     astra_list_item_t *display_menu = astra_new_list_item("显示模式", list_icon);
     astra_list_item_t *pet_menu = astra_new_list_item("桌宠人格", list_icon);
+    astra_list_item_t *system_menu = astra_new_list_item("系统设置", list_icon);
+    astra_list_item_t *screen_sleep_menu = astra_new_list_item("息屏模式", list_icon);
     astra_push_item_to_list(root, game_menu);
     astra_push_item_to_list(root,
         astra_new_button_item("方向标定", on_calibration_button, flag_icon));
     astra_push_item_to_list(root, display_menu);
     astra_push_item_to_list(root, pet_menu);
-    astra_push_item_to_list(root,
+    astra_push_item_to_list(root, system_menu);
+    astra_push_item_to_list(system_menu, screen_sleep_menu);
+    astra_push_item_to_list(system_menu,
         astra_new_switch_item("DEBUG模式", &s_debug_mode_value,
                               init_debug_mode_switch, on_debug_mode_changed,
                               switch_icon));
-    astra_push_item_to_list(root,
+    astra_push_item_to_list(system_menu,
         astra_new_user_item("系统状态", NULL, astra_status_page_loop, NULL, list_icon));
+    astra_push_item_to_list(screen_sleep_menu,
+        astra_new_button_item("常亮", on_screen_sleep_always_on, flag_icon));
+    astra_push_item_to_list(screen_sleep_menu,
+        astra_new_button_item("5秒息屏", on_screen_sleep_auto_off, flag_icon));
     astra_push_item_to_list(game_menu,
         astra_new_button_item("功德木鱼", on_muyu_button, flag_icon));
     astra_push_item_to_list(game_menu,
@@ -172,6 +212,12 @@ void astra_menu_init(void)
         astra_new_button_item("活泼", on_pet_persona_playful, flag_icon));
     astra_push_item_to_list(pet_menu,
         astra_new_button_item("困困", on_pet_persona_sleepy, flag_icon));
+    astra_push_item_to_list(pet_menu,
+        astra_new_button_item("傲娇", on_pet_persona_tsundere, flag_icon));
+    astra_push_item_to_list(pet_menu,
+        astra_new_button_item("好奇", on_pet_persona_curious, flag_icon));
+    astra_push_item_to_list(pet_menu,
+        astra_new_button_item("酷哥", on_pet_persona_cool, flag_icon));
 
     astra_init_core();
 

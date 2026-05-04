@@ -99,6 +99,41 @@ config CARMOOD_TIME_TZ
     help
         C 标准库时区字符串。中国可用 CST-8。
 
+config CARMOOD_NIGHT_SLEEP_ENABLED
+    bool "深夜自动息屏"
+    default y
+    help
+        启用后，设备在本地时间落入深夜时段时，会按 5 秒无操作规则自动息屏。
+        离开深夜时段后，屏幕会自动恢复显示。
+
+config CARMOOD_NIGHT_SLEEP_START_HOUR
+    int "深夜自动息屏开始小时"
+    range 0 23
+    default 18
+    help
+        本地时间达到该小时后开始启用深夜自动息屏。
+
+config CARMOOD_NIGHT_SLEEP_START_MINUTE
+    int "深夜自动息屏开始分钟"
+    range 0 59
+    default 30
+    help
+        深夜自动息屏开始时的分钟数。
+
+config CARMOOD_NIGHT_SLEEP_END_HOUR
+    int "深夜自动息屏结束小时"
+    range 0 23
+    default 9
+    help
+        本地时间到达该小时后结束深夜自动息屏。
+
+config CARMOOD_NIGHT_SLEEP_END_MINUTE
+    int "深夜自动息屏结束分钟"
+    range 0 59
+    default 30
+    help
+        深夜自动息屏结束时的分钟数。
+
 endmenu
 
 menu "CarMood Touch Config"

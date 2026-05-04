@@ -19,3 +19,12 @@ void face_render_transition(carmood_expr_t from_expr,
                             carmood_expr_t to_expr,
                             uint32_t to_t_ms,
                             uint8_t progress_255);
+
+/**
+ * 实时手绘摇动反应表情，不依赖预渲染帧。
+ */
+void face_render_motion_reaction(carmood_reaction_mode_t mode,
+                                 int32_t shake_lr,
+                                 int32_t shake_fb,
+                                 int32_t shake_val,
+                                 uint32_t t_ms);

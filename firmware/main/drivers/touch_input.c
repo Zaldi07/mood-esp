@@ -59,8 +59,36 @@ static int64_t s_last_debug_log_ms = 0;
 
 /* 滑动检测：记录 UP/DOWN 通道最近一次 press 时间 */
 #define SWIPE_WINDOW_MS 400
+#define SWIPE_TRIGGER_DELTA 48
+#define TOUCH_SIDE_UP_PRESS_THRESHOLD 48
+#define TOUCH_SIDE_UP_RELEASE_THRESHOLD 18
 static int64_t s_swipe_press_ms[TOUCH_KEY_COUNT] = {0};
 static bool    s_swipe_consumed = false;
+static bool    s_swipe_above_threshold[TOUCH_KEY_COUNT] = {0};
+
+static int32_t touch_get_press_threshold(touch_key_t key)
+{
+  switch (key) {
+    case TOUCH_KEY_UP:
+      return TOUCH_SIDE_UP_PRESS_THRESHOLD;
+    case TOUCH_KEY_TOP:
+    case TOUCH_KEY_DOWN:
+    default:
+      return CONFIG_CARMOOD_TOUCH_PRESS_THRESHOLD;
+  }
+}
+
+static int32_t touch_get_release_threshold(touch_key_t key)
+{
+  switch (key) {
+    case TOUCH_KEY_UP:
+      return TOUCH_SIDE_UP_RELEASE_THRESHOLD;
+    case TOUCH_KEY_TOP:
+    case TOUCH_KEY_DOWN:
+    default:
+      return CONFIG_CARMOOD_TOUCH_RELEASE_THRESHOLD;
+  }
+}
 
 static void touch_reset_event(touch_input_event_t *event) {
   *event = (touch_input_event_t){0};
@@ -124,9 +152,11 @@ static void touch_update_key(
     touch_key_t key, int64_t now_ms, int32_t delta, touch_input_event_t *event) {
   touch_key_state_t *state = &s_key_states[key];
   touch_input_key_event_t *key_event = &event->keys[key];
+  int32_t press_threshold = touch_get_press_threshold(key);
+  int32_t release_threshold = touch_get_release_threshold(key);
 
-  bool over_press = delta >= CONFIG_CARMOOD_TOUCH_PRESS_THRESHOLD;
-  bool under_release = delta <= CONFIG_CARMOOD_TOUCH_RELEASE_THRESHOLD;
+  bool over_press = delta >= press_threshold;
+  bool under_release = delta <= release_threshold;
 
   if (!state->stable_pressed) {
     state->release_cnt = 0;
@@ -231,6 +261,15 @@ esp_err_t touch_input_poll(touch_input_event_t *event) {
     touch_update_key((touch_key_t)i, now_ms, deltas[i], event);
   }
 
+  for (int i = TOUCH_KEY_UP; i <= TOUCH_KEY_DOWN; ++i) {
+    bool over_swipe = deltas[i] >= SWIPE_TRIGGER_DELTA;
+    if (over_swipe && !s_swipe_above_threshold[i]) {
+      s_swipe_press_ms[i] = now_ms;
+      s_swipe_consumed = false;
+    }
+    s_swipe_above_threshold[i] = over_swipe;
+  }
+
   /* 滑动检测：两个通道在窗口内先后被按下 */
   if (!s_swipe_consumed &&
       s_swipe_press_ms[TOUCH_KEY_UP] > 0 &&
@@ -249,7 +288,9 @@ esp_err_t touch_input_poll(touch_input_event_t *event) {
 
   /* 两个通道都释放后重置滑动状态 */
   if (!event->samples[TOUCH_KEY_UP].stable_pressed &&
-      !event->samples[TOUCH_KEY_DOWN].stable_pressed) {
+      !event->samples[TOUCH_KEY_DOWN].stable_pressed &&
+      !s_swipe_above_threshold[TOUCH_KEY_UP] &&
+      !s_swipe_above_threshold[TOUCH_KEY_DOWN]) {
     s_swipe_press_ms[TOUCH_KEY_UP] = 0;
     s_swipe_press_ms[TOUCH_KEY_DOWN] = 0;
     s_swipe_consumed = false;

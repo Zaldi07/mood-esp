@@ -12,6 +12,9 @@ typedef enum {
     ASTRA_PET_PERSONA_DEFAULT,
     ASTRA_PET_PERSONA_PLAYFUL,
     ASTRA_PET_PERSONA_SLEEPY,
+    ASTRA_PET_PERSONA_TSUNDERE,
+    ASTRA_PET_PERSONA_CURIOUS,
+    ASTRA_PET_PERSONA_COOL,
 } astra_pet_persona_action_t;
 
 void astra_menu_init(void);

@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-/* 表情枚举，与 anim_*.h 数组一一对应 */
+/* 表情枚举，与 face_anim_data.h 数组一一对应 */
 typedef enum {
     EXPR_IDLE        = 0,
     EXPR_BLINK       = 1,
@@ -13,13 +13,34 @@ typedef enum {
     EXPR_TURN_RIGHT  = 5,
     EXPR_SURPRISED   = 6,
     EXPR_ANGRY       = 7,
-    EXPR_COUNT       = 8,
+    EXPR_LOVE        = 8,
+    EXPR_DIZZY       = 9,
+    EXPR_CRY         = 10,
+    EXPR_SHY         = 11,
+    EXPR_COOL        = 12,
+    EXPR_THINKING    = 13,
+    EXPR_EXCITED     = 14,
+    EXPR_WINK        = 15,
+    EXPR_YAWN        = 16,
+    EXPR_CONFUSED    = 17,
+    EXPR_COUNT       = 18,
 } carmood_expr_t;
 
 typedef enum {
     CARMOOD_DISPLAY_MODE_FACE = 0,
     CARMOOD_DISPLAY_MODE_CLOCK = 1,
 } carmood_display_mode_t;
+
+typedef enum {
+    CARMOOD_REACTION_NONE = 0,
+    CARMOOD_REACTION_DIZZY = 1,
+    CARMOOD_REACTION_ANGRY_DIZZY = 2,
+} carmood_reaction_mode_t;
+
+typedef enum {
+    CARMOOD_SCREEN_SLEEP_MODE_ALWAYS_ON = 0,
+    CARMOOD_SCREEN_SLEEP_MODE_AUTO_OFF_5S = 1,
+} carmood_screen_sleep_mode_t;
 
 /* 启动后台动画任务（在 oled_init() 之后调用一次） */
 void carmood_ui_init(void);
@@ -31,7 +52,11 @@ void carmood_ui_set_expression(carmood_expr_t expr);
 void carmood_ui_set_direction_overlay(char turn_char, char pitch_char);
 
 /* 更新传感器驱动的动态页面输入（线程安全） */
-void carmood_ui_set_motion_input(int32_t lr_val, int32_t fb_val, int32_t shake_val);
+void carmood_ui_set_motion_input(int32_t lr_val,
+                                 int32_t fb_val,
+                                 int32_t shake_lr,
+                                 int32_t shake_fb,
+                                 int32_t shake_val);
 
 /* 显示校准引导文字（同时暂停动画任务，避免竞争屏幕） */
 void carmood_ui_show_calibration(const char *line1, const char *line2);
@@ -102,6 +127,18 @@ void carmood_ui_set_display_mode(carmood_display_mode_t mode);
 
 /* 查询主显示模式 */
 carmood_display_mode_t carmood_ui_get_display_mode(void);
+
+/* 设置屏幕休眠策略 */
+void carmood_ui_set_screen_sleep_mode(carmood_screen_sleep_mode_t mode);
+
+/* 查询屏幕休眠策略 */
+carmood_screen_sleep_mode_t carmood_ui_get_screen_sleep_mode(void);
+
+/* 通知 UI 最近发生了用户交互，用于刷新自动息屏计时 */
+void carmood_ui_notify_activity(void);
+
+/* 查询当前是否处于自动息屏状态 */
+bool carmood_ui_is_screen_sleeping(void);
 
 /* 设置是否显示左上角调试叠加层 */
 void carmood_ui_set_debug_mode(bool enabled);

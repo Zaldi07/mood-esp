@@ -69,6 +69,53 @@ ANGRY_SCALE_BASE = 0.80
 ANGRY_SCALE_AMP  = 0.10
 ANGRY_PUPIL_DY   = 4
 
+# love（爱心眼）
+LOVE_DY_AMP       = 3
+LOVE_HEART_SIZE   = 10
+
+# dizzy（晕眩）
+DIZZY_WOBBLE_AMP  = 4
+DIZZY_SPIRAL_R    = 6
+
+# cry（哭泣）
+CRY_SCALE_BASE    = 0.70
+CRY_SCALE_AMP     = 0.10
+CRY_TEAR_SPEED    = 2.0
+
+# shy（害羞）
+SHY_SHIFT_X       = 6
+SHY_SCALE_BASE    = 0.75
+SHY_BLUSH_W       = 6
+
+# cool（墨镜酷）
+COOL_DY_AMP       = 1
+COOL_GLASS_H      = 14
+
+# thinking（思考）
+THINK_PUPIL_DX    = 10
+THINK_PUPIL_DY    = -4
+THINK_DOT_Y       = 6
+
+# excited（兴奋）
+EXCITED_SCALE_BASE = 1.30
+EXCITED_SCALE_AMP  = 0.20
+EXCITED_DY_AMP     = 4
+EXCITED_MOUTH_SIZE = 6
+
+# wink（眨单眼）
+WINK_DY_AMP       = 2
+
+# yawn（打哈欠）
+YAWN_MOUTH_BASE   = 3
+YAWN_MOUTH_AMP    = 8
+YAWN_SCALE_BASE   = 0.60
+YAWN_SCALE_AMP    = 0.30
+
+# confused（困惑）
+CONFUSED_TILT      = 3
+CONFUSED_L_SCALE   = 0.70
+CONFUSED_R_SCALE   = 1.20
+
 SCRIPT_DIR = Path(__file__).resolve().parent
 SCRIPTS_DIR = SCRIPT_DIR.parent
 PROJECT_ROOT = SCRIPTS_DIR.parent
@@ -226,6 +273,71 @@ def draw_brows_surprised(draw: ImageDraw.ImageDraw, dy: int = 0) -> None:
     line(draw, (EYE_R_CX - EYE_HW + 2, y, EYE_R_CX + EYE_HW - 2, y + 2), w=2)
 
 
+def draw_heart(draw: ImageDraw.ImageDraw, cx: int, cy: int, size: int) -> None:
+    """在 (cx, cy) 处绘制一个爱心"""
+    s = max(3, size)
+    hs = s // 2
+    draw.ellipse((cx - s, cy - hs, cx, cy + hs), fill=255)
+    draw.ellipse((cx, cy - hs, cx + s, cy + hs), fill=255)
+    pts = [(cx - s, cy), (cx, cy + s), (cx + s, cy)]
+    draw.polygon(pts, fill=255)
+
+
+def draw_spiral_eye(draw: ImageDraw.ImageDraw, cx: int, cy: int, r: int) -> None:
+    """绘制螺旋眼（晕眩用）"""
+    round_rect(draw, (cx - EYE_HW, cy - EYE_HH, cx + EYE_HW, cy + EYE_HH), radius=EYE_RADIUS)
+    line(draw, (cx - r, cy - r, cx + r, cy + r), w=2)
+    line(draw, (cx + r, cy - r, cx - r, cy + r), w=2)
+
+
+def draw_tear(draw: ImageDraw.ImageDraw, cx: int, y: int) -> None:
+    """绘制一滴泪"""
+    draw.ellipse((cx - 1, y, cx + 1, y + 3), fill=255)
+    draw.point((cx, y - 1), fill=255)
+
+
+def draw_blush(draw: ImageDraw.ImageDraw, cx: int, cy: int, w: int) -> None:
+    """绘制腮红斜线"""
+    for i in range(0, w, 2):
+        line(draw, (cx - w // 2 + i, cy - 1, cx - w // 2 + i + 1, cy + 1), w=1)
+
+
+def draw_sunglasses(draw: ImageDraw.ImageDraw, dy: int = 0) -> None:
+    """绘制墨镜"""
+    cy = EYE_CY + dy
+    h = COOL_GLASS_H
+    hh = h // 2
+    rect(draw, (EYE_L_CX - EYE_HW - 2, cy - hh, EYE_L_CX + EYE_HW + 2, cy + hh))
+    rect(draw, (EYE_R_CX - EYE_HW - 2, cy - hh, EYE_R_CX + EYE_HW + 2, cy + hh))
+    line(draw, (EYE_L_CX + EYE_HW + 2, cy, EYE_R_CX - EYE_HW - 2, cy), w=2)
+    line(draw, (EYE_L_CX - EYE_HW - 2, cy, EYE_L_CX - EYE_HW - 8, cy - 3), w=2)
+    line(draw, (EYE_R_CX + EYE_HW + 2, cy, EYE_R_CX + EYE_HW + 8, cy - 3), w=2)
+    rect_erase(draw, (EYE_L_CX - EYE_HW + 2, cy - hh + 2, EYE_L_CX + EYE_HW - 2, cy + hh - 2))
+    rect_erase(draw, (EYE_R_CX - EYE_HW + 2, cy - hh + 2, EYE_R_CX + EYE_HW - 2, cy + hh - 2))
+
+
+def draw_dots(draw: ImageDraw.ImageDraw, cx: int, cy: int, phase: float) -> None:
+    """绘制思考省略号动画"""
+    for i in range(3):
+        offset = max(0.0, min(1.0, phase * 3.0 - i))
+        r = 1 + round(offset)
+        dx = (i - 1) * 8
+        draw.ellipse((cx + dx - r, cy - r, cx + dx + r, cy + r), fill=255)
+
+
+def draw_mouth_open(draw: ImageDraw.ImageDraw, size: int = 5) -> None:
+    """绘制张大的嘴巴（兴奋/打哈欠用）"""
+    cx, cy = 64, MOUTH_Y
+    draw.ellipse((cx - size, cy - size, cx + size, cy + size // 2 + 1), fill=255)
+
+
+def draw_question_mark(draw: ImageDraw.ImageDraw, cx: int, cy: int) -> None:
+    """绘制问号"""
+    draw.arc((cx - 4, cy - 8, cx + 4, cy), start=180, end=0, fill=255, width=2)
+    line(draw, (cx + 4, cy - 4, cx, cy + 1), w=2)
+    draw.point((cx, cy + 4), fill=255)
+
+
 # ---------------------------------------------------------------------------
 # 基于时间 t (0~1) 的表情绘制（用于生成 C 帧数据）
 # ---------------------------------------------------------------------------
@@ -296,6 +408,94 @@ def render_expression_at_t(
         draw_brows_angry(draw)
         draw_eyes_with_pupils(draw, scale_h=scale, pupil_dy=p_dy)
         draw_mouth_angry(draw)
+
+    elif expression == "robot-love":
+        dy = -bounce_px_t(t, LOVE_DY_AMP)
+        heart_s = LOVE_HEART_SIZE + round(pp * 3)
+        draw_heart(draw, EYE_L_CX, EYE_CY + dy, heart_s)
+        draw_heart(draw, EYE_R_CX, EYE_CY + dy, heart_s)
+        draw_mouth_smile(draw, level=4 + round(pp * 2))
+
+    elif expression == "robot-dizzy":
+        wobble = round(math.sin(t * math.pi * 4) * DIZZY_WOBBLE_AMP)
+        draw_spiral_eye(draw, EYE_L_CX + wobble, EYE_CY, DIZZY_SPIRAL_R)
+        draw_spiral_eye(draw, EYE_R_CX + wobble, EYE_CY, DIZZY_SPIRAL_R)
+        draw_mouth_flat(draw)
+
+    elif expression == "robot-cry":
+        scale = CRY_SCALE_BASE + pp * CRY_SCALE_AMP
+        draw_eyes_with_pupils(draw, scale_h=scale, pupil_dy=3)
+        draw_mouth_flat(draw)
+        tear_y_offset = round((t * CRY_TEAR_SPEED * 30) % 20)
+        draw_tear(draw, EYE_L_CX - EYE_HW - 2, EYE_CY + tear_y_offset)
+        draw_tear(draw, EYE_R_CX + EYE_HW + 2, EYE_CY + tear_y_offset)
+        if tear_y_offset > 10:
+            draw_tear(draw, EYE_L_CX - EYE_HW - 2, EYE_CY + tear_y_offset - 14)
+            draw_tear(draw, EYE_R_CX + EYE_HW + 2, EYE_CY + tear_y_offset - 14)
+
+    elif expression == "robot-shy":
+        dx = round(pp * SHY_SHIFT_X)
+        scale = SHY_SCALE_BASE + pp * 0.15
+        draw_eyes_with_pupils(draw, scale_h=scale, pupil_dx=dx, pupil_dy=2)
+        draw_blush(draw, EYE_L_CX - EYE_HW - 4, MOUTH_Y - 6, SHY_BLUSH_W)
+        draw_blush(draw, EYE_R_CX + EYE_HW + 4, MOUTH_Y - 6, SHY_BLUSH_W)
+        draw_mouth_flat(draw)
+
+    elif expression == "robot-cool":
+        dy = bounce_px_t(t, COOL_DY_AMP)
+        draw_sunglasses(draw, dy=dy)
+        y = MOUTH_Y + dy
+        line(draw, (52, y, 58, y - 2), w=2)
+        line(draw, (58, y - 2, 70, y - 2), w=2)
+        line(draw, (70, y - 2, 76, y), w=2)
+
+    elif expression == "robot-thinking":
+        draw_eyes_with_pupils(draw, pupil_dx=THINK_PUPIL_DX, pupil_dy=THINK_PUPIL_DY)
+        draw_dots(draw, EYE_R_CX + 10, THINK_DOT_Y, pp)
+        draw_mouth_flat(draw)
+
+    elif expression == "robot-excited":
+        scale = EXCITED_SCALE_BASE + pp * EXCITED_SCALE_AMP
+        dy = -bounce_px_t(t, EXCITED_DY_AMP)
+        brow_dy = round(pp * 3)
+        draw_brows_surprised(draw, dy=brow_dy)
+        draw_eyes_with_pupils(draw, dy=dy, scale_h=scale, pupil_r=PUPIL_R + 1)
+        draw_mouth_open(draw, size=EXCITED_MOUTH_SIZE + round(pp * 3))
+
+    elif expression == "robot-wink":
+        dy = bounce_px_t(t, WINK_DY_AMP)
+        cy = EYE_CY + dy
+        round_rect(draw, (EYE_R_CX - EYE_HW, cy - EYE_HH, EYE_R_CX + EYE_HW, cy + EYE_HH), radius=EYE_RADIUS)
+        pupil(draw, EYE_R_CX, cy, PUPIL_R)
+        line(draw, (EYE_L_CX - EYE_HW + 2, cy, EYE_L_CX + EYE_HW - 2, cy), w=3)
+        draw_mouth_smile(draw, level=3)
+
+    elif expression == "robot-yawn":
+        phase = t
+        if phase < 0.3:
+            frac = phase / 0.3
+            scale = 1.0 - frac * (1.0 - YAWN_SCALE_BASE)
+            mouth = round(frac * YAWN_MOUTH_AMP)
+        elif phase < 0.7:
+            scale = YAWN_SCALE_BASE + ping_pong_t((phase - 0.3) / 0.4) * YAWN_SCALE_AMP
+            mouth = YAWN_MOUTH_AMP
+        else:
+            frac = (phase - 0.7) / 0.3
+            scale = YAWN_SCALE_BASE + (1.0 - frac) * YAWN_SCALE_AMP
+            mouth = round((1.0 - frac) * YAWN_MOUTH_AMP)
+        draw_eyes_with_pupils(draw, scale_h=max(0.2, scale), pupil_r=PUPIL_R - 1)
+        draw_mouth_open(draw, size=YAWN_MOUTH_BASE + mouth)
+
+    elif expression == "robot-confused":
+        l_hh = max(4, round(EYE_HH * CONFUSED_L_SCALE))
+        r_hh = max(4, round(EYE_HH * CONFUSED_R_SCALE))
+        tilt = round(pp * CONFUSED_TILT)
+        round_rect(draw, (EYE_L_CX - EYE_HW, EYE_CY - l_hh + tilt, EYE_L_CX + EYE_HW, EYE_CY + l_hh + tilt), radius=EYE_RADIUS)
+        pupil(draw, EYE_L_CX, EYE_CY + tilt, PUPIL_R)
+        round_rect(draw, (EYE_R_CX - EYE_HW, EYE_CY - r_hh - tilt, EYE_R_CX + EYE_HW, EYE_CY + r_hh - tilt), radius=EYE_RADIUS)
+        pupil(draw, EYE_R_CX, EYE_CY - tilt, PUPIL_R)
+        draw_question_mark(draw, EYE_R_CX + EYE_HW + 8, EYE_CY - EYE_HH + round(pp * 4))
+        draw_mouth_flat(draw)
 
     else:
         raise ValueError(f"unknown expression: {expression}")
@@ -368,6 +568,16 @@ ALL_EXPRESSIONS = [
     "robot-turn-right",
     "robot-surprised",
     "robot-angry",
+    "robot-love",
+    "robot-dizzy",
+    "robot-cry",
+    "robot-shy",
+    "robot-cool",
+    "robot-thinking",
+    "robot-excited",
+    "robot-wink",
+    "robot-yawn",
+    "robot-confused",
 ]
 
 EXPR_C_NAMES = {
@@ -379,9 +589,19 @@ EXPR_C_NAMES = {
     "robot-turn-right": "turn_right",
     "robot-surprised":  "surprised",
     "robot-angry":      "angry",
+    "robot-love":       "love",
+    "robot-dizzy":      "dizzy",
+    "robot-cry":        "cry",
+    "robot-shy":        "shy",
+    "robot-cool":       "cool",
+    "robot-thinking":   "thinking",
+    "robot-excited":    "excited",
+    "robot-wink":       "wink",
+    "robot-yawn":       "yawn",
+    "robot-confused":   "confused",
 }
 
-# 每个表情是否显示嘴巴
+# 每个表情是否显示嘴巴（仅影响 sleepy 的嘴巴条件分支）
 EXPR_HAS_MOUTH = {
     "robot-idle":       False,
     "robot-blink":      False,
@@ -391,6 +611,16 @@ EXPR_HAS_MOUTH = {
     "robot-turn-right": False,
     "robot-surprised":  True,
     "robot-angry":      True,
+    "robot-love":       True,
+    "robot-dizzy":      True,
+    "robot-cry":        True,
+    "robot-shy":        True,
+    "robot-cool":       True,
+    "robot-thinking":   True,
+    "robot-excited":    True,
+    "robot-wink":       True,
+    "robot-yawn":       True,
+    "robot-confused":   True,
 }
 
 
