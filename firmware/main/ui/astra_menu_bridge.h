@@ -27,12 +27,14 @@ void astra_menu_input_up(void);
 void astra_menu_input_down(void);
 void astra_menu_input_ok(void);
 void astra_menu_input_back(void);
+bool astra_menu_is_in_user_page(void);
 
 bool astra_menu_should_run_calibration(void);
 bool astra_menu_should_toggle_muyu(void);
 bool astra_menu_should_toggle_shooter(void);
 bool astra_menu_should_toggle_brick(void);
 bool astra_menu_should_toggle_flappy(void);
+bool astra_menu_should_toggle_pomodoro(void);
 astra_pet_persona_action_t astra_menu_get_pet_persona_action(void);
 void astra_menu_consume_actions(void);
 

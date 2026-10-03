@@ -1,7 +1,7 @@
-#include <string.h>
 #include "ssd1306_oled.h"
-#include "driver/spi_master.h"
-#include "driver/gpio.h"
+
+#include <string.h>
+#include "driver/i2c.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
@@ -10,161 +10,138 @@
 
 static const char *TAG = "oled";
 
-/* 引脚定义（默认值可通过 menuconfig 覆盖） */
-#ifndef CONFIG_CARMOOD_OLED_PIN_SCK
-#define CONFIG_CARMOOD_OLED_PIN_SCK 13
+#ifndef CONFIG_CARMOOD_OLED_I2C_PORT
+#define CONFIG_CARMOOD_OLED_I2C_PORT 0
 #endif
-#ifndef CONFIG_CARMOOD_OLED_PIN_MOSI
-#define CONFIG_CARMOOD_OLED_PIN_MOSI 12
+#ifndef CONFIG_CARMOOD_OLED_I2C_SDA
+#define CONFIG_CARMOOD_OLED_I2C_SDA 8
 #endif
-#ifndef CONFIG_CARMOOD_OLED_PIN_CS
-#define CONFIG_CARMOOD_OLED_PIN_CS 9
+#ifndef CONFIG_CARMOOD_OLED_I2C_SCL
+#define CONFIG_CARMOOD_OLED_I2C_SCL 9
 #endif
-#ifndef CONFIG_CARMOOD_OLED_PIN_DC
-#define CONFIG_CARMOOD_OLED_PIN_DC 10
+#ifndef CONFIG_CARMOOD_OLED_I2C_ADDR
+#define CONFIG_CARMOOD_OLED_I2C_ADDR 0x3C
 #endif
-#ifndef CONFIG_CARMOOD_OLED_PIN_RST
-#define CONFIG_CARMOOD_OLED_PIN_RST 11
+#ifndef CONFIG_CARMOOD_OLED_COLUMN_OFFSET
+#define CONFIG_CARMOOD_OLED_COLUMN_OFFSET 0
 #endif
 
-#define PIN_OLED_SCK   ((gpio_num_t)CONFIG_CARMOOD_OLED_PIN_SCK)
-#define PIN_OLED_MOSI  ((gpio_num_t)CONFIG_CARMOOD_OLED_PIN_MOSI)
-#define PIN_OLED_CS    ((gpio_num_t)CONFIG_CARMOOD_OLED_PIN_CS)
-#define PIN_OLED_DC    ((gpio_num_t)CONFIG_CARMOOD_OLED_PIN_DC)
-#define PIN_OLED_RST   ((gpio_num_t)CONFIG_CARMOOD_OLED_PIN_RST)
+#define OLED_I2C_PORT      ((i2c_port_t)CONFIG_CARMOOD_OLED_I2C_PORT)
+#define OLED_I2C_SDA       ((gpio_num_t)CONFIG_CARMOOD_OLED_I2C_SDA)
+#define OLED_I2C_SCL       ((gpio_num_t)CONFIG_CARMOOD_OLED_I2C_SCL)
+#define OLED_I2C_ADDR      ((uint8_t)CONFIG_CARMOOD_OLED_I2C_ADDR)
+#define OLED_COLUMN_OFFSET CONFIG_CARMOOD_OLED_COLUMN_OFFSET
 
-#define OLED_SPI_HOST  SPI2_HOST
-#define OLED_SPI_FREQ  (10 * 1000 * 1000)  // 10 MHz
-#define OLED_PAGE_COUNT 8
-#define OLED_COLUMN_COUNT 128
-/* SH1106 常见需要列偏移 2；若图像整体左右偏移可改成 0/2/4 试验 */
-#define OLED_COLUMN_OFFSET 2
+#define OLED_PAGE_COUNT    8
+#define OLED_COLUMN_COUNT  128
+#define OLED_BUF_SIZE      (OLED_WIDTH * OLED_HEIGHT / 8)
 
-/* 中景园 1.3 竖屏资料使用 64 列 x 16 页 = 1024 字节 */
-#define OLED_BUF_SIZE  (OLED_WIDTH * OLED_HEIGHT / 8)
 static uint8_t s_framebuf[OLED_BUF_SIZE];
-
-static spi_device_handle_t s_spi = NULL;
-
-static esp_err_t oled_write_byte(uint8_t value, bool is_data)
-{
-    gpio_set_level(PIN_OLED_DC, is_data ? 1 : 0);
-    spi_transaction_t t = {
-        .length = 8,
-        .tx_buffer = &value,
-    };
-    return spi_device_polling_transmit(s_spi, &t);
-}
+static uint8_t s_oled_addr = OLED_I2C_ADDR;
 
 static esp_err_t oled_write_cmd(uint8_t cmd)
 {
-    return oled_write_byte(cmd, false);
-}
-
-static esp_err_t oled_write_data(uint8_t data)
-{
-    return oled_write_byte(data, true);
-}
-
-static esp_err_t oled_hw_reset(void)
-{
-    gpio_set_level(PIN_OLED_RST, 1);
-    vTaskDelay(pdMS_TO_TICKS(100));
-    gpio_set_level(PIN_OLED_RST, 0);
-    vTaskDelay(pdMS_TO_TICKS(200));
-    gpio_set_level(PIN_OLED_RST, 1);
-    vTaskDelay(pdMS_TO_TICKS(50));
-    return ESP_OK;
+    uint8_t buf[2] = {0x00, cmd};
+    return i2c_master_write_to_device(OLED_I2C_PORT, s_oled_addr, buf, sizeof(buf), pdMS_TO_TICKS(100));
 }
 
 esp_err_t oled_init(void)
 {
-    /* 1. 初始化 DC/RST GPIO */
-    gpio_config_t io_cfg = {
-        .pin_bit_mask = (1ULL << PIN_OLED_DC) | (1ULL << PIN_OLED_RST),
-        .mode = GPIO_MODE_OUTPUT,
-        .pull_up_en = GPIO_PULLUP_DISABLE,
-        .pull_down_en = GPIO_PULLDOWN_DISABLE,
-        .intr_type = GPIO_INTR_DISABLE,
+    /* 1. 配置 I2C 参数 */
+    i2c_config_t conf = {
+        .mode = I2C_MODE_MASTER,
+        .sda_io_num = OLED_I2C_SDA,
+        .scl_io_num = OLED_I2C_SCL,
+        .sda_pullup_en = GPIO_PULLUP_ENABLE,
+        .scl_pullup_en = GPIO_PULLUP_ENABLE,
+        .master.clk_speed = 400000,
     };
-    ESP_RETURN_ON_ERROR(gpio_config(&io_cfg), TAG, "GPIO 初始化失败");
+    esp_err_t ret = i2c_param_config(OLED_I2C_PORT, &conf);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "I2C param config failed: %s", esp_err_to_name(ret));
+        return ret;
+    }
 
-    /* 2. 初始化 SPI 总线 */
-    spi_bus_config_t bus_cfg = {
-        .sclk_io_num = PIN_OLED_SCK,
-        .mosi_io_num = PIN_OLED_MOSI,
-        .miso_io_num = -1,
-        .quadwp_io_num = -1,
-        .quadhd_io_num = -1,
-        .max_transfer_sz = OLED_BUF_SIZE + 64,
+    ret = i2c_driver_install(OLED_I2C_PORT, I2C_MODE_MASTER, 0, 0, 0);
+    if (ret != ESP_OK && ret != ESP_ERR_INVALID_STATE) {
+        ESP_LOGE(TAG, "I2C driver install failed: %s", esp_err_to_name(ret));
+        return ret;
+    }
+
+    /* 2. 探测 OLED I2C 地址 (0x3C 或 0x3D) */
+    const uint8_t probe_addrs[] = {OLED_I2C_ADDR, (uint8_t)(OLED_I2C_ADDR == 0x3C ? 0x3D : 0x3C)};
+    bool found = false;
+    for (int i = 0; i < 2; i++) {
+        uint8_t dummy_cmd[2] = {0x00, 0xE3}; // NOP command
+        if (i2c_master_write_to_device(OLED_I2C_PORT, probe_addrs[i], dummy_cmd, sizeof(dummy_cmd), pdMS_TO_TICKS(50)) == ESP_OK) {
+            s_oled_addr = probe_addrs[i];
+            found = true;
+            ESP_LOGI(TAG, "检测到 OLED I2C 地址: 0x%02X", s_oled_addr);
+            break;
+        }
+    }
+    if (!found) {
+        ESP_LOGW(TAG, "未收到 OLED 探测响应，默认尝试使用 0x%02X", s_oled_addr);
+    }
+
+    /* 3. SSD1306 初始化指令序列 */
+    static const uint8_t init_cmds[] = {
+        0xAE,       // Display OFF
+        0xD5, 0x80, // Set Display Clock Divide Ratio/Oscillator Frequency
+        0xA8, 0x3F, // Set Multiplex Ratio (1/64)
+        0xD3, 0x00, // Set Display Offset (0)
+        0x40,       // Set Display Start Line (0)
+        0x8D, 0x14, // Charge Pump Setting (Enable)
+        0x20, 0x02, // Set Memory Addressing Mode (Page Addressing Mode)
+        0xA1,       // Set Segment Re-map (0xA1 = column address 127 is mapped to SEG0)
+        0xC8,       // Set COM Output Scan Direction (0xC8 = remapped mode)
+        0xDA, 0x12, // Set COM Pins Hardware Configuration
+        0x81, 0xCF, // Set Contrast Control
+        0xD9, 0xF1, // Set Pre-charge Period
+        0xDB, 0x40, // Set VCOMH Deselect Level
+        0xA4,       // Entire Display ON (Resume from RAM)
+        0xA6,       // Set Normal Display
+        0xAF        // Display ON
     };
-    ESP_RETURN_ON_ERROR(
-        spi_bus_initialize(OLED_SPI_HOST, &bus_cfg, SPI_DMA_CH_AUTO),
-        TAG, "SPI 总线初始化失败");
 
-    /* 3. 添加 SPI 设备 */
-    spi_device_interface_config_t dev_cfg = {
-        .clock_speed_hz = OLED_SPI_FREQ,
-        .mode = 0,
-        .spics_io_num = PIN_OLED_CS,
-        .queue_size = 4,
-    };
-    ESP_RETURN_ON_ERROR(
-        spi_bus_add_device(OLED_SPI_HOST, &dev_cfg, &s_spi),
-        TAG, "SPI 设备添加失败");
+    for (size_t i = 0; i < sizeof(init_cmds); i++) {
+        ESP_RETURN_ON_ERROR(oled_write_cmd(init_cmds[i]), TAG, "Init cmd 0x%02X failed", init_cmds[i]);
+    }
 
-    /* 4. 硬件复位 */
-    ESP_RETURN_ON_ERROR(oled_hw_reset(), TAG, "OLED 复位失败");
-
-    /* 5. 使用 128x64 常用初始化序列（兼容 SSD1306/SH1106） */
-    ESP_RETURN_ON_ERROR(oled_write_cmd(0xAE), TAG, "init cmd failed");
-    ESP_RETURN_ON_ERROR(oled_write_cmd(0xD5), TAG, "init cmd failed");  // 时钟分频
-    ESP_RETURN_ON_ERROR(oled_write_cmd(0x80), TAG, "init cmd failed");
-    ESP_RETURN_ON_ERROR(oled_write_cmd(0xA8), TAG, "init cmd failed");  // 多路复用
-    ESP_RETURN_ON_ERROR(oled_write_cmd(0x3F), TAG, "init cmd failed");  // 1/64 duty
-    ESP_RETURN_ON_ERROR(oled_write_cmd(0xD3), TAG, "init cmd failed");  // 显示偏移
-    ESP_RETURN_ON_ERROR(oled_write_cmd(0x00), TAG, "init cmd failed");
-    ESP_RETURN_ON_ERROR(oled_write_cmd(0x40), TAG, "init cmd failed");  // 显示起始行
-    ESP_RETURN_ON_ERROR(oled_write_cmd(0x8D), TAG, "init cmd failed");  // 电荷泵
-    ESP_RETURN_ON_ERROR(oled_write_cmd(0x14), TAG, "init cmd failed");
-    ESP_RETURN_ON_ERROR(oled_write_cmd(0x20), TAG, "init cmd failed");  // 内存地址模式
-    ESP_RETURN_ON_ERROR(oled_write_cmd(0x00), TAG, "init cmd failed");  // 水平寻址
-    ESP_RETURN_ON_ERROR(oled_write_cmd(0xA1), TAG, "init cmd failed");  // SEG remap
-    ESP_RETURN_ON_ERROR(oled_write_cmd(0xC8), TAG, "init cmd failed");  // COM 扫描方向
-    ESP_RETURN_ON_ERROR(oled_write_cmd(0xDA), TAG, "init cmd failed");  // COM 引脚配置
-    ESP_RETURN_ON_ERROR(oled_write_cmd(0x12), TAG, "init cmd failed");
-    ESP_RETURN_ON_ERROR(oled_write_cmd(0x81), TAG, "init cmd failed");
-    ESP_RETURN_ON_ERROR(oled_write_cmd(0xCF), TAG, "init cmd failed");  // 对比度
-    ESP_RETURN_ON_ERROR(oled_write_cmd(0xD9), TAG, "init cmd failed");
-    ESP_RETURN_ON_ERROR(oled_write_cmd(0xF1), TAG, "init cmd failed");  // 预充电
-    ESP_RETURN_ON_ERROR(oled_write_cmd(0xDB), TAG, "init cmd failed");
-    ESP_RETURN_ON_ERROR(oled_write_cmd(0x40), TAG, "init cmd failed");  // VCOMH
-    ESP_RETURN_ON_ERROR(oled_write_cmd(0xA4), TAG, "init cmd failed");
-    ESP_RETURN_ON_ERROR(oled_write_cmd(0xA6), TAG, "init cmd failed");
-    ESP_RETURN_ON_ERROR(oled_write_cmd(0xAF), TAG, "init cmd failed");
-
-    /* 6. 清空帧缓冲并刷屏 */
+    /* 4. 清空缓冲并刷屏 */
     memset(s_framebuf, 0x00, OLED_BUF_SIZE);
     ESP_RETURN_ON_ERROR(oled_flush(), TAG, "初始清屏失败");
 
-    ESP_LOGI(TAG, "OLED 初始化完成（128x64 映射）");
+    ESP_LOGI(TAG, "OLED (I2C) 初始化完成 (128x64)");
     return ESP_OK;
 }
 
 esp_err_t oled_flush(void)
 {
+    uint8_t cmd_buf[4];
+    cmd_buf[0] = 0x00; // Control byte: Command
+
+    uint8_t page_buf[1 + OLED_COLUMN_COUNT];
+    page_buf[0] = 0x40; // Control byte: Data
+
     for (uint8_t page = 0; page < OLED_PAGE_COUNT; page++) {
         uint8_t col_addr = OLED_COLUMN_OFFSET;
-        ESP_RETURN_ON_ERROR(oled_write_cmd(0xB0 + page), TAG, "set page failed");
-        ESP_RETURN_ON_ERROR(oled_write_cmd(0x00 | (col_addr & 0x0F)), TAG, "set low col failed");
-        ESP_RETURN_ON_ERROR(oled_write_cmd(0x10 | ((col_addr >> 4) & 0x0F)), TAG, "set high col failed");
+        cmd_buf[1] = 0xB0 + page;
+        cmd_buf[2] = 0x00 | (col_addr & 0x0F);
+        cmd_buf[3] = 0x10 | ((col_addr >> 4) & 0x0F);
 
-        gpio_set_level(PIN_OLED_DC, 1);
-        spi_transaction_t t = {
-            .length    = OLED_COLUMN_COUNT * 8,
-            .tx_buffer = &s_framebuf[page * OLED_COLUMN_COUNT],
-        };
-        ESP_RETURN_ON_ERROR(spi_device_polling_transmit(s_spi, &t), TAG, "flush page failed");
+        esp_err_t err = i2c_master_write_to_device(
+            OLED_I2C_PORT, s_oled_addr, cmd_buf, sizeof(cmd_buf), pdMS_TO_TICKS(100));
+        if (err != ESP_OK) {
+            return err;
+        }
+
+        memcpy(&page_buf[1], &s_framebuf[page * OLED_COLUMN_COUNT], OLED_COLUMN_COUNT);
+        err = i2c_master_write_to_device(
+            OLED_I2C_PORT, s_oled_addr, page_buf, sizeof(page_buf), pdMS_TO_TICKS(100));
+        if (err != ESP_OK) {
+            return err;
+        }
     }
     return ESP_OK;
 }
@@ -191,7 +168,6 @@ void oled_set_pixel(int x, int y, bool on)
     if (x < 0 || x >= OLED_WIDTH || y < 0 || y >= OLED_HEIGHT) {
         return;
     }
-    /* 标准 128x64 页模式：每页 8 行，LSB 为页内低位行 */
     uint16_t idx = (uint16_t)((y / 8) * OLED_COLUMN_COUNT + x);
     uint8_t bit = (uint8_t)(1U << (y % 8));
     if (on) {
@@ -203,5 +179,13 @@ void oled_set_pixel(int x, int y, bool on)
 
 void oled_draw_bitmap(const uint8_t *data)
 {
-    memcpy(s_framebuf, data, OLED_BUF_SIZE);
+    if (data != NULL) {
+        memcpy(s_framebuf, data, OLED_BUF_SIZE);
+    }
 }
+
+esp_err_t oled_set_power(bool on)
+{
+    return oled_write_cmd(on ? 0xAF : 0xAE);
+}
+

@@ -19,6 +19,7 @@ static bool s_action_toggle_muyu;
 static bool s_action_toggle_shooter;
 static bool s_action_toggle_brick;
 static bool s_action_toggle_flappy;
+static bool s_action_toggle_pomodoro;
 static bool s_action_run_calibration;
 static bool s_debug_mode_value;
 static astra_pet_persona_action_t s_pet_persona_action;
@@ -26,25 +27,25 @@ static astra_pet_persona_action_t s_pet_persona_action;
 static void on_display_face_mode(void)
 {
     carmood_ui_set_display_mode(CARMOOD_DISPLAY_MODE_FACE);
-    astra_push_info_bar("表情模式", 800);
+    astra_push_info_bar("Face Mode", 800);
 }
 
 static void on_display_clock_mode(void)
 {
     carmood_ui_set_display_mode(CARMOOD_DISPLAY_MODE_CLOCK);
-    astra_push_info_bar("时钟模式", 800);
+    astra_push_info_bar("Clock Mode", 800);
 }
 
 static void on_screen_sleep_always_on(void)
 {
     carmood_ui_set_screen_sleep_mode(CARMOOD_SCREEN_SLEEP_MODE_ALWAYS_ON);
-    astra_push_info_bar("常亮模式", 800);
+    astra_push_info_bar("Always On", 800);
 }
 
 static void on_screen_sleep_auto_off(void)
 {
     carmood_ui_set_screen_sleep_mode(CARMOOD_SCREEN_SLEEP_MODE_AUTO_OFF_5S);
-    astra_push_info_bar("5秒息屏", 800);
+    astra_push_info_bar("5s Auto Off", 800);
 }
 
 static void init_debug_mode_switch(void)
@@ -76,6 +77,11 @@ static void on_brick_button(void)
 static void on_flappy_button(void)
 {
     s_action_toggle_flappy = true;
+}
+
+static void on_pomodoro_button(void)
+{
+    s_action_toggle_pomodoro = true;
 }
 
 static void on_calibration_button(void)
@@ -113,6 +119,11 @@ static void on_pet_persona_cool(void)
     s_pet_persona_action = ASTRA_PET_PERSONA_COOL;
 }
 
+static void on_menu_back(void)
+{
+    astra_menu_input_back();
+}
+
 static void astra_status_page_loop(void)
 {
     char turn_char = 'C';
@@ -132,35 +143,35 @@ static void astra_status_page_loop(void)
     astra_set_font(u8g2_font_my_chinese);
     oled_set_draw_color(1);
 
-    oled_draw_UTF8(2, 10, "系统状态");
+    oled_draw_UTF8(2, 10, "Status");
     oled_draw_H_line(0, 13, OLED_WIDTH - 8);
 
-    snprintf(line, sizeof(line), "模式:%s", muyu_mode ? "木鱼" : "正常");
+    snprintf(line, sizeof(line), "Mode:%s", muyu_mode ? "Zen" : "Normal");
     oled_draw_UTF8(2, 24, line);
 
-    snprintf(line, sizeof(line), "时间:%s", carmood_time_sync_is_synced() ? "已同步" : "未同步");
+    snprintf(line, sizeof(line), "NTP:%s", carmood_time_sync_is_synced() ? "OK" : "No");
     oled_draw_UTF8(2, 34, line);
 
-    snprintf(line, sizeof(line), "显示:%s",
-             display_mode == CARMOOD_DISPLAY_MODE_FACE ? "表情" :
-             "时钟");
+    snprintf(line, sizeof(line), "Disp:%s",
+             display_mode == CARMOOD_DISPLAY_MODE_FACE ? "Face" :
+             "Clock");
     oled_draw_UTF8(2, 44, line);
 
-    snprintf(line, sizeof(line), "息屏:%s",
-             screen_sleep_mode == CARMOOD_SCREEN_SLEEP_MODE_ALWAYS_ON ? "常亮" :
-             "5秒");
+    snprintf(line, sizeof(line), "Sleep:%s",
+             screen_sleep_mode == CARMOOD_SCREEN_SLEEP_MODE_ALWAYS_ON ? "Always" :
+             "5s");
     oled_draw_UTF8(2, 54, line);
 
-    snprintf(line, sizeof(line), "Debug:%s", debug_mode ? "ON" : "OFF");
+    snprintf(line, sizeof(line), "Dbg:%s", debug_mode ? "ON" : "OFF");
     oled_draw_UTF8(66, 24, line);
 
-    snprintf(line, sizeof(line), "方向:%c/%c", turn_char, pitch_char);
+    snprintf(line, sizeof(line), "Dir:%c/%c", turn_char, pitch_char);
     oled_draw_UTF8(66, 34, line);
 
-    snprintf(line, sizeof(line), "内存:%luK", (unsigned long)heap_kb);
+    snprintf(line, sizeof(line), "RAM:%luK", (unsigned long)heap_kb);
     oled_draw_UTF8(66, 44, line);
 
-    snprintf(line, sizeof(line), "Run:%lum", (unsigned long)uptime_m);
+    snprintf(line, sizeof(line), "Up:%lum", (unsigned long)uptime_m);
     oled_draw_UTF8(66, 54, line);
 }
 
@@ -172,52 +183,66 @@ void astra_menu_init(void)
 
     /* 构建菜单树 */
     astra_list_item_t *root = astra_get_root_list();
-    astra_list_item_t *game_menu = astra_new_list_item("游戏选择", list_icon);
-    astra_list_item_t *display_menu = astra_new_list_item("显示模式", list_icon);
-    astra_list_item_t *pet_menu = astra_new_list_item("桌宠人格", list_icon);
-    astra_list_item_t *system_menu = astra_new_list_item("系统设置", list_icon);
-    astra_list_item_t *screen_sleep_menu = astra_new_list_item("息屏模式", list_icon);
+    astra_list_item_t *game_menu = astra_new_list_item("Games", list_icon);
+    astra_list_item_t *display_menu = astra_new_list_item("Display Mode", list_icon);
+    astra_list_item_t *pet_menu = astra_new_list_item("Pet Persona", list_icon);
+    astra_list_item_t *system_menu = astra_new_list_item("System Settings", list_icon);
+    astra_list_item_t *screen_sleep_menu = astra_new_list_item("Sleep Mode", list_icon);
+    astra_push_item_to_list(root,
+        astra_new_button_item("Pomodoro Timer", on_pomodoro_button, flag_icon));
     astra_push_item_to_list(root, game_menu);
     astra_push_item_to_list(root,
-        astra_new_button_item("方向标定", on_calibration_button, flag_icon));
+        astra_new_button_item("Calibrate", on_calibration_button, flag_icon));
     astra_push_item_to_list(root, display_menu);
     astra_push_item_to_list(root, pet_menu);
     astra_push_item_to_list(root, system_menu);
+    astra_push_item_to_list(root,
+        astra_new_button_item("< Exit Menu", on_menu_back, flag_icon));
     astra_push_item_to_list(system_menu, screen_sleep_menu);
     astra_push_item_to_list(system_menu,
-        astra_new_switch_item("DEBUG模式", &s_debug_mode_value,
+        astra_new_switch_item("Debug Mode", &s_debug_mode_value,
                               init_debug_mode_switch, on_debug_mode_changed,
                               switch_icon));
     astra_push_item_to_list(system_menu,
-        astra_new_user_item("系统状态", NULL, astra_status_page_loop, NULL, list_icon));
+        astra_new_user_item("System Status", NULL, astra_status_page_loop, NULL, list_icon));
+    astra_push_item_to_list(system_menu,
+        astra_new_button_item("< Back", on_menu_back, flag_icon));
     astra_push_item_to_list(screen_sleep_menu,
-        astra_new_button_item("常亮", on_screen_sleep_always_on, flag_icon));
+        astra_new_button_item("Always On", on_screen_sleep_always_on, flag_icon));
     astra_push_item_to_list(screen_sleep_menu,
-        astra_new_button_item("5秒息屏", on_screen_sleep_auto_off, flag_icon));
+        astra_new_button_item("5s Auto Off", on_screen_sleep_auto_off, flag_icon));
+    astra_push_item_to_list(screen_sleep_menu,
+        astra_new_button_item("< Back", on_menu_back, flag_icon));
     astra_push_item_to_list(game_menu,
-        astra_new_button_item("功德木鱼", on_muyu_button, flag_icon));
+        astra_new_button_item("Wooden Fish", on_muyu_button, flag_icon));
     astra_push_item_to_list(game_menu,
-        astra_new_button_item("打砖块", on_brick_button, flag_icon));
+        astra_new_button_item("Brick Breaker", on_brick_button, flag_icon));
     astra_push_item_to_list(game_menu,
-        astra_new_button_item("像素小鸟", on_flappy_button, flag_icon));
+        astra_new_button_item("Flappy Bird", on_flappy_button, flag_icon));
     astra_push_item_to_list(game_menu,
-        astra_new_button_item("打飞机", on_shooter_button, flag_icon));
+        astra_new_button_item("Space Shooter", on_shooter_button, flag_icon));
+    astra_push_item_to_list(game_menu,
+        astra_new_button_item("< Back", on_menu_back, flag_icon));
     astra_push_item_to_list(display_menu,
-        astra_new_button_item("表情模式", on_display_face_mode, flag_icon));
+        astra_new_button_item("Face Mode", on_display_face_mode, flag_icon));
     astra_push_item_to_list(display_menu,
-        astra_new_button_item("时钟模式", on_display_clock_mode, flag_icon));
+        astra_new_button_item("Clock Mode", on_display_clock_mode, flag_icon));
+    astra_push_item_to_list(display_menu,
+        astra_new_button_item("< Back", on_menu_back, flag_icon));
     astra_push_item_to_list(pet_menu,
-        astra_new_button_item("默认", on_pet_persona_default, flag_icon));
+        astra_new_button_item("Default", on_pet_persona_default, flag_icon));
     astra_push_item_to_list(pet_menu,
-        astra_new_button_item("活泼", on_pet_persona_playful, flag_icon));
+        astra_new_button_item("Playful", on_pet_persona_playful, flag_icon));
     astra_push_item_to_list(pet_menu,
-        astra_new_button_item("困困", on_pet_persona_sleepy, flag_icon));
+        astra_new_button_item("Sleepy", on_pet_persona_sleepy, flag_icon));
     astra_push_item_to_list(pet_menu,
-        astra_new_button_item("傲娇", on_pet_persona_tsundere, flag_icon));
+        astra_new_button_item("Tsundere", on_pet_persona_tsundere, flag_icon));
     astra_push_item_to_list(pet_menu,
-        astra_new_button_item("好奇", on_pet_persona_curious, flag_icon));
+        astra_new_button_item("Curious", on_pet_persona_curious, flag_icon));
     astra_push_item_to_list(pet_menu,
-        astra_new_button_item("酷哥", on_pet_persona_cool, flag_icon));
+        astra_new_button_item("Cool", on_pet_persona_cool, flag_icon));
+    astra_push_item_to_list(pet_menu,
+        astra_new_button_item("< Back", on_menu_back, flag_icon));
 
     astra_init_core();
 
@@ -233,6 +258,7 @@ void astra_menu_open(void)
     s_action_toggle_shooter   = false;
     s_action_toggle_brick     = false;
     s_action_toggle_flappy    = false;
+    s_action_toggle_pomodoro  = false;
     s_action_run_calibration  = false;
     s_pet_persona_action      = ASTRA_PET_PERSONA_NONE;
 
@@ -310,6 +336,11 @@ bool astra_menu_should_toggle_flappy(void)
     return s_action_toggle_flappy;
 }
 
+bool astra_menu_should_toggle_pomodoro(void)
+{
+    return s_action_toggle_pomodoro;
+}
+
 astra_pet_persona_action_t astra_menu_get_pet_persona_action(void)
 {
     return s_pet_persona_action;
@@ -321,6 +352,18 @@ void astra_menu_consume_actions(void)
     s_action_toggle_shooter  = false;
     s_action_toggle_brick    = false;
     s_action_toggle_flappy   = false;
+    s_action_toggle_pomodoro = false;
     s_action_run_calibration = false;
     s_pet_persona_action     = ASTRA_PET_PERSONA_NONE;
+}
+
+bool astra_menu_is_in_user_page(void)
+{
+    if (!in_astra) return false;
+    if (astra_selector.selected_item != NULL &&
+        astra_selector.selected_item->type == user_item &&
+        astra_to_user_item(astra_selector.selected_item)->in_user_item) {
+        return true;
+    }
+    return false;
 }

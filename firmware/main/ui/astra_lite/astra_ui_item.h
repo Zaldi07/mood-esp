@@ -58,7 +58,7 @@ extern void astra_push_pop_up(char *_content, uint16_t _span);
 #define LIST_ITEM_RIGHT_MARGIN 20
 #define LIST_INFO_BAR_HEIGHT   3
 #define LIST_FONT_TOP_MARGIN   4
-#define LIST_TEXT_OFFSET_X     10
+#define LIST_TEXT_OFFSET_X     3
 
 typedef enum {
     list_item,

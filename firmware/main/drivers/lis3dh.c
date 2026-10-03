@@ -17,10 +17,10 @@ static const char *TAG = "lis3dh";
 #define CONFIG_CARMOOD_LIS3DH_I2C_PORT 0
 #endif
 #ifndef CONFIG_CARMOOD_LIS3DH_I2C_SDA
-#define CONFIG_CARMOOD_LIS3DH_I2C_SDA 38
+#define CONFIG_CARMOOD_LIS3DH_I2C_SDA 8
 #endif
 #ifndef CONFIG_CARMOOD_LIS3DH_I2C_SCL
-#define CONFIG_CARMOOD_LIS3DH_I2C_SCL 37
+#define CONFIG_CARMOOD_LIS3DH_I2C_SCL 9
 #endif
 #ifndef CONFIG_CARMOOD_LIS3DH_I2C_FREQ_HZ
 #define CONFIG_CARMOOD_LIS3DH_I2C_FREQ_HZ 400000
@@ -101,11 +101,12 @@ esp_err_t lis3dh_init(void) {
       .scl_pullup_en = GPIO_PULLUP_ENABLE,
       .master.clk_speed = LIS3DH_I2C_FREQ_HZ,
   };
-  ESP_RETURN_ON_ERROR(i2c_param_config(LIS3DH_I2C_PORT, &i2c_cfg), TAG,
-                      "I2C 参数配置失败");
-  ESP_RETURN_ON_ERROR(
-      i2c_driver_install(LIS3DH_I2C_PORT, I2C_MODE_MASTER, 0, 0, 0), TAG,
-      "I2C 驱动安装失败");
+  i2c_param_config(LIS3DH_I2C_PORT, &i2c_cfg);
+  esp_err_t drv_err = i2c_driver_install(LIS3DH_I2C_PORT, I2C_MODE_MASTER, 0, 0, 0);
+  if (drv_err != ESP_OK && drv_err != ESP_ERR_INVALID_STATE) {
+    ESP_LOGE(TAG, "I2C 驱动安装失败: %s", esp_err_to_name(drv_err));
+    return drv_err;
+  }
 
   /* 依次尝试 0x18/0x19 */
   const uint8_t candidates[2] = {0x18, 0x19};

@@ -251,10 +251,10 @@ bool flappy_game_tick(void)
     oled_set_font(u8g2_font_my_chinese);
     oled_set_draw_color(1);
     if (s_game_over) {
-        oled_draw_UTF8(28, 28, "游戏结束");
-        oled_draw_UTF8(18, 42, "点击重开");
+        oled_draw_UTF8(37, 28, "GAME OVER");
+        oled_draw_UTF8(28, 42, "Tap to Retry");
     } else if (!s_started) {
-        oled_draw_UTF8(18, 42, "点击开始");
+        oled_draw_UTF8(28, 42, "Tap to Start");
     }
 
     oled_send_buffer();

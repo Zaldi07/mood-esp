@@ -515,13 +515,13 @@ static void render_game_over(void)
     /* "GAME OVER" 用中文字体 */
     oled_set_font(u8g2_font_my_chinese);
     oled_set_draw_color(1);
-    oled_draw_UTF8(20, 24, "游戏结束");
+    oled_draw_UTF8(37, 24, "GAME OVER");
 
     /* 分数 */
     draw_number((W - 6 * 4) / 2, 34, s_score);
 
     /* 提示 */
-    oled_draw_UTF8(8, 58, "长按顶部退出");
+    oled_draw_UTF8(28, 58, "Hold to Exit");
 
     oled_send_buffer();
 }

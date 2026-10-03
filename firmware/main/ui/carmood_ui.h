@@ -122,6 +122,21 @@ bool carmood_ui_is_flappy_mode(void);
 /* 像素小鸟跳跃 */
 void carmood_ui_flappy_jump(void);
 
+/* 进入番茄钟模式 (Pomodoro Timer) */
+void carmood_ui_enter_pomodoro(void);
+
+/* 退出番茄钟模式 */
+void carmood_ui_exit_pomodoro(void);
+
+/* 查询当前是否处于番茄钟模式 */
+bool carmood_ui_is_pomodoro_mode(void);
+
+/* 番茄钟单触控动作（运行/暂停/切换阶段） */
+void carmood_ui_pomodoro_tap(void);
+
+/* 番茄钟双击动作（重置/切换模式） */
+void carmood_ui_pomodoro_double_tap(void);
+
 /* 设置主显示模式 */
 void carmood_ui_set_display_mode(carmood_display_mode_t mode);
 

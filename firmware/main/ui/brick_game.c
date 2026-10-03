@@ -298,7 +298,11 @@ bool brick_game_tick(void)
     oled_set_font(u8g2_font_my_chinese);
     oled_set_draw_color(1);
     if (s_finished) {
-        oled_draw_UTF8(34, 30, s_win ? "通关了" : "游戏结束");
+        if (s_win) {
+            oled_draw_UTF8(40, 30, "YOU WIN!");
+        } else {
+            oled_draw_UTF8(37, 30, "GAME OVER");
+        }
     }
     oled_send_buffer();
     return true;

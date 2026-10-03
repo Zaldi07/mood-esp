@@ -52,6 +52,11 @@ void oled_set_pixel(int x, int y, bool on);
  */
 void oled_draw_bitmap(const uint8_t *data);
 
+/**
+ * 设置 OLED 屏幕电源（true = ON, false = OFF/Sleep）
+ */
+esp_err_t oled_set_power(bool on);
+
 #ifdef __cplusplus
 }
 #endif

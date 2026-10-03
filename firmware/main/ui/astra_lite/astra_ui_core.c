@@ -90,7 +90,7 @@ void astra_refresh_selector_position(void)
         astra_selector.w_selector_trg = OLED_WIDTH - 18;
     else
         astra_selector.w_selector_trg =
-            (float)oled_get_UTF8_width(astra_selector.selected_item->content) + 12;
+            (float)oled_get_UTF8_width(astra_selector.selected_item->content) + 6;
 
     astra_selector.h_selector_trg = 15;
     astra_animation(&astra_selector.y_selector, astra_selector.y_selector_trg, 91);

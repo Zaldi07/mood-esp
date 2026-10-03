@@ -17,6 +17,8 @@
 #include "ui/brick_game.h"
 #include "ui/flappy_game.h"
 #include "ui/shooter_game.h"
+#include "ui/pomodoro.h"
+#include "drivers/buzzer.h"
 
 static const char *TAG = "carmood_ui";
 
@@ -86,6 +88,7 @@ static int64_t          s_muyu_tap_start = 0;
 static volatile bool    s_shooter_mode   = false;
 static volatile bool    s_brick_mode     = false;
 static volatile bool    s_flappy_mode    = false;
+static volatile bool    s_pomodoro_mode  = false;
 
 /* ------------------------------------------------------------------ */
 /* 5x7 字体（校准流程用）                                               */
@@ -468,6 +471,18 @@ static void anim_task(void *arg)
         }
 
         xSemaphoreTake(s_mutex, portMAX_DELAY);
+        bool in_pomodoro = s_pomodoro_mode;
+        xSemaphoreGive(s_mutex);
+
+        if (in_pomodoro) {
+            reset_motion_reaction(&reaction_mode, &reaction_start_us,
+                                  &reaction_dizzy_hold_until_us);
+            pomodoro_tick();
+            vTaskDelay(pdMS_TO_TICKS(ANIM_FRAME_MS));
+            continue;
+        }
+
+        xSemaphoreTake(s_mutex, portMAX_DELAY);
         carmood_screen_sleep_mode_t screen_sleep_mode = s_screen_sleep_mode;
         bool screen_sleeping = s_screen_sleeping;
         bool night_sleep_active = false;
@@ -620,7 +635,7 @@ void carmood_ui_init(void)
 {
     s_mutex = xSemaphoreCreateMutex();
     s_last_activity_us = esp_timer_get_time();
-    xTaskCreatePinnedToCore(anim_task, "anim", 6144, NULL, 5, NULL, 1);
+    xTaskCreate(anim_task, "anim", 6144, NULL, 5, NULL);
 }
 
 void carmood_ui_set_expression(carmood_expr_t expr)
@@ -975,4 +990,47 @@ void carmood_ui_shooter_input_right_hold(void)
 void carmood_ui_shooter_input_release(void)
 {
     shooter_game_push_input(SHOOTER_INPUT_RELEASE);
+}
+
+void carmood_ui_enter_pomodoro(void)
+{
+    xSemaphoreTake(s_mutex, portMAX_DELAY);
+    s_muyu_mode      = false;
+    s_muyu_animating = false;
+    s_muyu_tapped    = false;
+    s_shooter_mode   = false;
+    s_brick_mode     = false;
+    s_flappy_mode    = false;
+    s_pomodoro_mode  = true;
+    xSemaphoreGive(s_mutex);
+    pomodoro_init();
+    ESP_LOGI(TAG, "Entered Pomodoro Mode");
+}
+
+void carmood_ui_exit_pomodoro(void)
+{
+    buzzer_stop();
+    xSemaphoreTake(s_mutex, portMAX_DELAY);
+    s_pomodoro_mode = false;
+    s_expr_changed = true;
+    xSemaphoreGive(s_mutex);
+    ESP_LOGI(TAG, "Exited Pomodoro Mode");
+}
+
+bool carmood_ui_is_pomodoro_mode(void)
+{
+    xSemaphoreTake(s_mutex, portMAX_DELAY);
+    bool ret = s_pomodoro_mode;
+    xSemaphoreGive(s_mutex);
+    return ret;
+}
+
+void carmood_ui_pomodoro_tap(void)
+{
+    pomodoro_tap();
+}
+
+void carmood_ui_pomodoro_double_tap(void)
+{
+    pomodoro_double_tap();
 }

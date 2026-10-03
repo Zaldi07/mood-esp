@@ -225,45 +225,10 @@ void astra_draw_list_appearance(void)
 
 void astra_draw_list_icon(astra_list_item_icon_t icon, uint16_t x, uint16_t y)
 {
-    switch (icon) {
-    case list_icon:
-        oled_draw_H_line(2 + x, y - 2, 4);
-        oled_draw_H_line(2 + x, y, 5);
-        oled_draw_H_line(2 + x, y + 2, 3);
-        break;
-    case switch_icon:
-        oled_draw_circle(4 + x, y + 1, 3);
-        oled_draw_V_line(4 + x, y, 3);
-        break;
-    case plus_icon:
-        oled_draw_circle(4 + x, y + 1, 3);
-        oled_draw_V_line(4 + x, y, 3);
-        oled_draw_H_line(3 + x, y + 1, 3);
-        break;
-    case slider_icon:
-        oled_draw_V_line(3 + x, y - 1, 5);
-        oled_draw_V_line(6 + x, y - 1, 5);
-        oled_draw_box(2 + x, y - 2, 3, 3);
-        oled_draw_box(5 + x, y + 2, 3, 3);
-        break;
-    case user_icon:
-        oled_draw_str(2 + x, y + oled_get_str_height() / 2, "-");
-        break;
-    case flag_icon:
-        oled_draw_V_line(6 + x, y - 1, 5);
-        oled_draw_box(3 + x, y - 2, 4, 3);
-        break;
-    case power_icon:
-        oled_draw_circle(4 + x, y + 1, 3);
-        oled_draw_V_line(4 + x, y - 2, 3);
-        oled_set_draw_color(0);
-        oled_draw_pixel(x + 3, y - 2);
-        oled_draw_pixel(x + 5, y - 2);
-        oled_set_draw_color(1);
-        break;
-    default:
-        break;
-    }
+    (void)icon;
+    (void)x;
+    (void)y;
+    /* Left list icon is removed/emptied per user request */
 }
 
 void astra_draw_list_item(void)

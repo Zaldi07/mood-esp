@@ -6,6 +6,7 @@ idf_component_register(
         "app/carmood_app.c"
         "app/carmood_face_controller.c"
         "app/time_sync.c"
+        "app/power_sleep.c"
         "ssd1306_oled.c"
         "ui/carmood_ui.c"
         "ui/face_renderer.c"
@@ -13,6 +14,9 @@ idf_component_register(
         "ui/brick_game.c"
         "ui/flappy_game.c"
         "ui/shooter_game.c"
+        "ui/pomodoro.c"
+        "ui/boot_intro.c"
+        "ui/boot_quote.c"
         "ui/astra_menu_bridge.c"
         "ui/astra_lite/astra_ui_draw_driver.c"
         "ui/astra_lite/astra_ui_item.c"
@@ -21,6 +25,7 @@ idf_component_register(
         "ui/astra_lite/Others/u8g2_font_my_chinese.c"
         "drivers/lis3dh.c"
         "drivers/touch_input.c"
+        "drivers/buzzer.c"
         ${U8G2_SRCS}
     INCLUDE_DIRS "."
 )
