@@ -29,7 +29,7 @@ export default function UserGuide() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-mono uppercase tracking-widest text-cyan-400">
+              <span className="text-xs font-mono uppercase tracking-widest text-violet-400">
                 Dokumentasi
               </span>
             </div>
@@ -49,7 +49,7 @@ export default function UserGuide() {
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                     isActive
-                      ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                      ? 'bg-violet-600/25 text-violet-200 border border-violet-500/40 shadow-sm'
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
@@ -72,8 +72,8 @@ export default function UserGuide() {
             <div className="p-4 rounded-xl bg-slate-900/50 border border-white/[0.06] flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between text-xs mb-2">
-                  <span className="text-cyan-400 font-bold">1x TAP (&lt;0.4s)</span>
-                  <Hand className="w-3.5 h-3.5 text-cyan-400" />
+                  <span className="text-violet-400 font-bold">1x TAP (&lt;0.4s)</span>
+                  <Hand className="w-3.5 h-3.5 text-violet-400" />
                 </div>
                 <div className="text-sm font-semibold text-white mb-2">Interaksi & Aksi</div>
                 <ul className="text-xs text-slate-400 space-y-1">
@@ -91,8 +91,8 @@ export default function UserGuide() {
             <div className="p-4 rounded-xl bg-slate-900/50 border border-white/[0.06] flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between text-xs mb-2">
-                  <span className="text-indigo-400 font-bold">2x TAP</span>
-                  <Zap className="w-3.5 h-3.5 text-indigo-400" />
+                  <span className="text-fuchsia-400 font-bold">2x TAP</span>
+                  <Zap className="w-3.5 h-3.5 text-fuchsia-400" />
                 </div>
                 <div className="text-sm font-semibold text-white mb-2">Kembali / Reset</div>
                 <ul className="text-xs text-slate-400 space-y-1">
@@ -154,27 +154,27 @@ export default function UserGuide() {
             className="grid grid-cols-1 md:grid-cols-3 gap-3 font-mono"
           >
             <div className="p-4 rounded-xl bg-slate-900/50 border border-white/[0.06] space-y-2">
-              <div className="flex items-center gap-2 text-cyan-400">
+              <div className="flex items-center gap-2 text-violet-400">
                 <Smile className="w-4 h-4" />
                 <span className="text-sm font-semibold text-white">18+ Wajah Robot</span>
               </div>
               <p className="text-xs text-slate-400">
                 Animasi ekspresi OLED responsif terhadap getaran meja (LIS3DH) dan sentuhan (TTP223).
               </p>
-              <div className="text-[10px] text-cyan-400/80 bg-cyan-500/10 px-2 py-1 rounded border border-cyan-500/20 inline-block">
+              <div className="text-[10px] text-violet-300 bg-violet-500/10 px-2 py-1 rounded border border-violet-500/20 inline-block">
                 Kompresi RLE Flash
               </div>
             </div>
 
             <div className="p-4 rounded-xl bg-slate-900/50 border border-white/[0.06] space-y-2">
-              <div className="flex items-center gap-2 text-indigo-400">
+              <div className="flex items-center gap-2 text-fuchsia-400">
                 <Gamepad2 className="w-4 h-4" />
                 <span className="text-sm font-semibold text-white">3 Retro Games</span>
               </div>
               <p className="text-xs text-slate-400">
                 Pixel Flappy, Space Shooter, dan Brick Breaker langsung di layar OLED 128×64.
               </p>
-              <div className="text-[10px] text-indigo-400/80 bg-indigo-500/10 px-2 py-1 rounded border border-indigo-500/20 inline-block">
+              <div className="text-[10px] text-fuchsia-300 bg-fuchsia-500/10 px-2 py-1 rounded border border-fuchsia-500/20 inline-block">
                 Frame Rate 30 FPS
               </div>
             </div>
@@ -206,7 +206,7 @@ export default function UserGuide() {
                 <span className="text-amber-400 font-bold block">Garis vertikal di sisi kiri OLED</span>
                 <span className="text-slate-400 text-[11px]">Display SH1106 butuh offset 2 kolom</span>
               </div>
-              <code className="shrink-0 bg-slate-950 px-2 py-1 rounded border border-slate-800 text-cyan-300 text-[11px]">
+              <code className="shrink-0 bg-slate-950 px-2 py-1 rounded border border-slate-800 text-violet-300 text-[11px]">
                 OFFSET=2
               </code>
             </div>
@@ -223,20 +223,20 @@ export default function UserGuide() {
 
             <div className="p-3.5 rounded-xl bg-slate-900/60 border border-white/[0.06] flex items-center justify-between gap-3">
               <div>
-                <span className="text-cyan-400 font-bold block">Jam Wi-Fi gagal sinkron</span>
+                <span className="text-violet-400 font-bold block">Jam Wi-Fi gagal sinkron</span>
                 <span className="text-slate-400 text-[11px]">ESP32 hanya mendukung 2.4 GHz</span>
               </div>
-              <code className="shrink-0 bg-slate-950 px-2 py-1 rounded border border-slate-800 text-cyan-300 text-[11px]">
+              <code className="shrink-0 bg-slate-950 px-2 py-1 rounded border border-slate-800 text-violet-300 text-[11px]">
                 Wi-Fi 2.4 GHz
               </code>
             </div>
 
             <div className="p-3.5 rounded-xl bg-slate-900/60 border border-white/[0.06] flex items-center justify-between gap-3">
               <div>
-                <span className="text-indigo-400 font-bold block">Flash partition overflow</span>
+                <span className="text-fuchsia-400 font-bold block">Flash partition overflow</span>
                 <span className="text-slate-400 text-[11px]">Partisi app default 1MB terlampaui</span>
               </div>
-              <code className="shrink-0 bg-slate-950 px-2 py-1 rounded border border-slate-800 text-indigo-300 text-[11px]">
+              <code className="shrink-0 bg-slate-950 px-2 py-1 rounded border border-slate-800 text-fuchsia-300 text-[11px]">
                 partitions.csv 3MB
               </code>
             </div>

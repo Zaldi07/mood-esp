@@ -205,7 +205,7 @@ export default function Flasher() {
       {/* Tab Selector */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
         <div>
-          <span className="text-xs font-mono uppercase tracking-widest text-cyan-400">
+          <span className="text-xs font-mono uppercase tracking-widest text-violet-400">
             Flasher
           </span>
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white mt-0.5">
@@ -219,7 +219,7 @@ export default function Flasher() {
             onClick={() => setActiveTab('esp-web-tools')}
             className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
               activeTab === 'esp-web-tools'
-                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                ? 'bg-violet-600/25 text-violet-200 border border-violet-500/40'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -229,7 +229,7 @@ export default function Flasher() {
             onClick={() => setActiveTab('advanced')}
             className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
               activeTab === 'advanced'
-                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                ? 'bg-violet-600/25 text-violet-200 border border-violet-500/40'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -251,21 +251,21 @@ export default function Flasher() {
             {/* Firmware Parts Included */}
             <div className="bg-slate-950/70 border border-white/[0.06] rounded-xl p-4 text-left font-mono">
               <div className="text-[11px] text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                <FileCode className="w-3.5 h-3.5 text-cyan-400" />
+                <FileCode className="w-3.5 h-3.5 text-violet-400" />
                 <span>Firmware Bundled v1.0.0:</span>
               </div>
               <ul className="text-xs space-y-1.5 text-slate-300">
                 <li className="flex justify-between border-b border-white/[0.04] pb-1">
                   <span>bootloader.bin</span>
-                  <span className="text-cyan-400">@ 0x0000</span>
+                  <span className="text-violet-400">@ 0x0000</span>
                 </li>
                 <li className="flex justify-between border-b border-white/[0.04] pb-1">
                   <span>partition-table.bin</span>
-                  <span className="text-cyan-400">@ 0x8000</span>
+                  <span className="text-violet-400">@ 0x8000</span>
                 </li>
                 <li className="flex justify-between">
                   <span>carmood.bin (App)</span>
-                  <span className="text-cyan-400">@ 0x10000</span>
+                  <span className="text-violet-400">@ 0x10000</span>
                 </li>
               </ul>
             </div>
@@ -275,7 +275,7 @@ export default function Flasher() {
               <esp-web-install-button manifest="./manifest.json">
                 <button
                   slot="activate"
-                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-mono font-bold text-xs shadow-glow-cyan transition-all active:scale-95 cursor-pointer"
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-mono font-bold text-xs shadow-glow-purple transition-all active:scale-95 cursor-pointer"
                 >
                   <Zap className="w-3.5 h-3.5 fill-current" />
                   <span>HUBUNGKAN & FLASH FIRMWARE</span>
@@ -311,7 +311,7 @@ export default function Flasher() {
               
               <div className="flex items-center justify-between pb-3 border-b border-white/5">
                 <span className="text-sm font-semibold text-white flex items-center gap-2">
-                  <Sliders className="w-4 h-4 text-cyan-400" />
+                  <Sliders className="w-4 h-4 text-violet-400" />
                   Konfigurasi Koneksi Serial
                 </span>
                 {chipInfo && (
@@ -330,7 +330,7 @@ export default function Flasher() {
                   value={baudRate}
                   disabled={status === 'connected' || status === 'flashing'}
                   onChange={(e) => setBaudRate(Number(e.target.value))}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-cyan-400"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-violet-400"
                 >
                   <option value={115200}>115200 (Stabil / Safe Mode)</option>
                   <option value={460800}>460800 (Rekomendasi Cepat)</option>
@@ -344,7 +344,7 @@ export default function Flasher() {
                   <button
                     onClick={handleConnect}
                     disabled={status === 'connecting'}
-                    className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold text-xs font-mono transition-all shadow-glow-cyan active:scale-95 cursor-pointer disabled:opacity-50"
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-semibold text-xs font-mono transition-all shadow-glow-purple active:scale-95 cursor-pointer disabled:opacity-50"
                   >
                     <Zap className="w-4 h-4" />
                     <span>{status === 'connecting' ? 'Menghubungkan...' : '1. Pilih Port & Hubungkan'}</span>
@@ -372,13 +372,13 @@ export default function Flasher() {
                   onClick={() => setCustomFile(null)}
                   className={`p-3 rounded-xl border text-xs cursor-pointer transition-all ${
                     !customFile 
-                      ? 'bg-cyan-500/10 border-cyan-400/50 text-cyan-200' 
+                      ? 'bg-violet-600/10 border-violet-400/50 text-violet-200' 
                       : 'bg-slate-900/50 border-slate-800 text-slate-400 hover:border-slate-700'
                   }`}
                 >
                   <div className="font-semibold flex items-center justify-between">
-                    <span>📦 Firmware Asli (Mood ESP v1.0.0)</span>
-                    {!customFile && <CheckCircle2 className="w-4 h-4 text-cyan-400" />}
+                    <span>📦 Firmware Asli (DeskBuddy v1.0.0)</span>
+                    {!customFile && <CheckCircle2 className="w-4 h-4 text-violet-400" />}
                   </div>
                   <p className="text-[11px] text-slate-500 mt-1">
                     Termasuk bootloader.bin (0x0), partition-table.bin (0x8000), & carmood.bin (0x10000).
@@ -406,7 +406,7 @@ export default function Flasher() {
                         setCustomFile(e.target.files[0]);
                       }
                     }}
-                    className="block w-full text-xs text-slate-400 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[11px] file:font-mono file:bg-slate-800 file:text-cyan-400 hover:file:bg-slate-700 cursor-pointer"
+                    className="block w-full text-xs text-slate-400 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[11px] file:font-mono file:bg-slate-800 file:text-violet-400 hover:file:bg-slate-700 cursor-pointer"
                   />
                   {customFile && (
                     <div className="flex items-center gap-2 pt-1">
@@ -416,7 +416,7 @@ export default function Flasher() {
                         value={customOffset}
                         onChange={(e) => setCustomOffset(e.target.value)}
                         placeholder="0x10000"
-                        className="bg-slate-950 border border-slate-800 rounded px-2 py-0.5 text-[11px] font-mono text-cyan-300 w-24"
+                        className="bg-slate-950 border border-slate-800 rounded px-2 py-0.5 text-[11px] font-mono text-violet-300 w-24"
                       />
                     </div>
                   )}
@@ -429,7 +429,7 @@ export default function Flasher() {
                 disabled={status !== 'connected' && status !== 'error'}
                 className={`w-full py-3 px-4 rounded-xl font-bold text-xs font-mono transition-all flex items-center justify-center gap-2 cursor-pointer ${
                   status === 'connected' || status === 'error'
-                    ? 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 shadow-glow-green active:scale-95'
+                    ? 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-glow-purple active:scale-95'
                     : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700/50'
                 }`}
               >
@@ -447,14 +447,14 @@ export default function Flasher() {
               {(status === 'flashing' || status === 'success') && (
                 <div className="pt-2 space-y-2">
                   <div className="flex justify-between text-xs font-mono">
-                    <span className="text-cyan-400 font-medium truncate max-w-[280px]">
+                    <span className="text-violet-400 font-medium truncate max-w-[280px]">
                       {currentFileStep || 'Memproses...'}
                     </span>
                     <span className="text-slate-300 font-bold">{progress}%</span>
                   </div>
                   <div className="w-full h-2.5 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
                     <motion.div
-                      className="h-full bg-gradient-to-r from-cyan-500 via-sky-400 to-emerald-400"
+                      className="h-full bg-gradient-to-r from-violet-500 via-fuchsia-500 to-indigo-500"
                       initial={{ width: 0 }}
                       animate={{ width: `${progress}%` }}
                       transition={{ ease: 'easeOut', duration: 0.2 }}
@@ -472,7 +472,7 @@ export default function Flasher() {
             
             {/* Quick Tips */}
             <div className="mt-3 p-3.5 rounded-xl bg-slate-900/60 border border-slate-800/80 text-xs space-y-1.5 text-slate-400 font-mono">
-              <div className="flex items-center gap-1.5 text-cyan-400 font-semibold">
+              <div className="flex items-center gap-1.5 text-violet-400 font-semibold">
                 <HelpCircle className="w-3.5 h-3.5" />
                 <span>Tips ESP32-C3 / S3 Bootloader:</span>
               </div>

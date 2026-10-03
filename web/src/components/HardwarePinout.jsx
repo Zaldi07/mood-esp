@@ -30,8 +30,8 @@ export default function HardwarePinout() {
                 <tr>
                   <th className="py-2.5 px-4">Modul Perangkat</th>
                   <th className="py-2.5 px-4">Bus</th>
-                  <th className="py-2.5 px-4 text-cyan-400">Signal / SDA</th>
-                  <th className="py-2.5 px-4 text-cyan-400">SCL</th>
+                  <th className="py-2.5 px-4 text-violet-400">Signal / SDA</th>
+                  <th className="py-2.5 px-4 text-violet-400">SCL</th>
                   <th className="py-2.5 px-4 text-emerald-400">Power</th>
                   <th className="py-2.5 px-4 text-slate-400">Keterangan</th>
                 </tr>
@@ -43,8 +43,8 @@ export default function HardwarePinout() {
                       {pin.module}
                     </td>
                     <td className="py-2.5 px-4 text-slate-400">{pin.type}</td>
-                    <td className="py-2.5 px-4 font-bold text-cyan-300">{pin.sda}</td>
-                    <td className="py-2.5 px-4 font-bold text-cyan-300">{pin.scl}</td>
+                    <td className="py-2.5 px-4 font-bold text-violet-300">{pin.sda}</td>
+                    <td className="py-2.5 px-4 font-bold text-violet-300">{pin.scl}</td>
                     <td className="py-2.5 px-4 text-emerald-300">{pin.vcc} & {pin.gnd}</td>
                     <td className="py-2.5 px-4 text-slate-400 text-[11px]">{pin.notes}</td>
                   </tr>
@@ -57,12 +57,12 @@ export default function HardwarePinout() {
         {/* 3 Compact Chips */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1 font-mono text-xs">
           <div className="p-3 rounded-xl bg-slate-900/40 border border-white/[0.06] flex items-center gap-2.5 text-slate-300">
-            <Usb className="w-4 h-4 text-cyan-400 shrink-0" />
+            <Usb className="w-4 h-4 text-violet-400 shrink-0" />
             <span>Kabel USB Data (bukan charger-only)</span>
           </div>
 
           <div className="p-3 rounded-xl bg-slate-900/40 border border-white/[0.06] flex items-center gap-2.5 text-slate-300">
-            <Zap className="w-4 h-4 text-amber-400 shrink-0" />
+            <Zap className="w-4 h-4 text-fuchsia-400 shrink-0" />
             <span>Tahan BOOT jika flashing gagal</span>
           </div>
 

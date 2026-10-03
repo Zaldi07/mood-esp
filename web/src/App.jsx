@@ -9,7 +9,7 @@ import Footer from './components/Footer';
 
 export default function App() {
   return (
-    <div className="min-h-screen flex flex-col bg-[#07090e] text-slate-100 selection:bg-cyan-500/20 selection:text-cyan-300">
+    <div className="min-h-screen flex flex-col bg-[#090714] text-slate-100 selection:bg-violet-600/30 selection:text-violet-200">
       {/* Top Sticky Minimalist Navigation */}
       <Header />
 

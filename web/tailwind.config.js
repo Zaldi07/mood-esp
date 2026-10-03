@@ -9,12 +9,14 @@ export default {
     extend: {
       colors: {
         oled: {
-          bg: '#07090e',
-          card: '#0e131f',
-          surface: '#141c2e',
-          border: '#1e293f',
-          accent: '#00f2fe',
-          cyan: '#38bdf8',
+          bg: '#090714',
+          card: '#110d24',
+          surface: '#171233',
+          border: '#2a1f4d',
+          accent: '#8b5cf6',
+          purple: '#7c3aed',
+          violet: '#6d28d9',
+          lilac: '#c4b5fd',
           green: '#10b981',
           amber: '#f59e0b',
           rose: '#f43f5e'
@@ -25,9 +27,11 @@ export default {
         mono: ['"JetBrains Mono"', 'monospace'],
       },
       boxShadow: {
-        'glow-cyan': '0 0 25px -5px rgba(56, 189, 248, 0.35)',
+        'glow-purple': '0 0 25px -5px rgba(139, 92, 246, 0.45)',
+        'glow-violet': '0 0 30px -5px rgba(124, 58, 237, 0.5)',
+        'glow-lilac': '0 0 20px -3px rgba(196, 181, 253, 0.4)',
         'glow-green': '0 0 25px -5px rgba(16, 185, 129, 0.35)',
-        'glow-oled': '0 0 30px -5px rgba(0, 242, 254, 0.25)',
+        'glow-oled': '0 0 30px -5px rgba(139, 92, 246, 0.3)',
       },
       animation: {
         'pulse-subtle': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
