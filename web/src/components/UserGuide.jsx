@@ -39,7 +39,7 @@ export default function UserGuide() {
           </div>
 
           {/* Minimalist Tab Selector */}
-          <div className="flex items-center bg-slate-900/80 border border-slate-800 p-1 rounded-xl self-start sm:self-auto text-xs font-mono">
+          <div className="w-full sm:w-auto overflow-x-auto scrollbar-none flex items-center bg-slate-900/80 border border-slate-800 p-1 rounded-xl text-xs font-mono">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -47,13 +47,13 @@ export default function UserGuide() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                  className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg transition-all cursor-pointer whitespace-nowrap ${
                     isActive
-                      ? 'bg-violet-600/25 text-violet-200 border border-violet-500/40 shadow-sm'
+                      ? 'bg-violet-600/25 text-violet-200 border border-violet-500/40 shadow-sm font-semibold'
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
-                  <Icon className="w-3.5 h-3.5" />
+                  <Icon className="w-3.5 h-3.5 shrink-0" />
                   <span>{tab.label}</span>
                 </button>
               );
@@ -201,42 +201,42 @@ export default function UserGuide() {
             animate={{ opacity: 1, y: 0 }}
             className="grid grid-cols-1 md:grid-cols-2 gap-2.5 font-mono text-xs"
           >
-            <div className="p-3.5 rounded-xl bg-slate-900/60 border border-white/[0.06] flex items-center justify-between gap-3">
+            <div className="p-3.5 rounded-xl bg-slate-900/60 border border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3">
               <div>
                 <span className="text-amber-400 font-bold block">Garis vertikal di sisi kiri OLED</span>
                 <span className="text-slate-400 text-[11px]">Display SH1106 butuh offset 2 kolom</span>
               </div>
-              <code className="shrink-0 bg-slate-950 px-2 py-1 rounded border border-slate-800 text-violet-300 text-[11px]">
+              <code className="self-start sm:self-auto shrink-0 bg-slate-950 px-2 py-1 rounded border border-slate-800 text-violet-300 text-[11px]">
                 OFFSET=2
               </code>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-slate-900/60 border border-white/[0.06] flex items-center justify-between gap-3">
+            <div className="p-3.5 rounded-xl bg-slate-900/60 border border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3">
               <div>
                 <span className="text-emerald-400 font-bold block">Baterai tanpa saklar fisik</span>
                 <span className="text-slate-400 text-[11px]">Matikan layar & masuk sleep mode</span>
               </div>
-              <code className="shrink-0 bg-slate-950 px-2 py-1 rounded border border-slate-800 text-emerald-300 text-[11px]">
+              <code className="self-start sm:self-auto shrink-0 bg-slate-950 px-2 py-1 rounded border border-slate-800 text-emerald-300 text-[11px]">
                 Hold 5s GPIO 7
               </code>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-slate-900/60 border border-white/[0.06] flex items-center justify-between gap-3">
+            <div className="p-3.5 rounded-xl bg-slate-900/60 border border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3">
               <div>
                 <span className="text-violet-400 font-bold block">Jam Wi-Fi gagal sinkron</span>
                 <span className="text-slate-400 text-[11px]">ESP32 hanya mendukung 2.4 GHz</span>
               </div>
-              <code className="shrink-0 bg-slate-950 px-2 py-1 rounded border border-slate-800 text-violet-300 text-[11px]">
+              <code className="self-start sm:self-auto shrink-0 bg-slate-950 px-2 py-1 rounded border border-slate-800 text-violet-300 text-[11px]">
                 Wi-Fi 2.4 GHz
               </code>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-slate-900/60 border border-white/[0.06] flex items-center justify-between gap-3">
+            <div className="p-3.5 rounded-xl bg-slate-900/60 border border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3">
               <div>
                 <span className="text-fuchsia-400 font-bold block">Flash partition overflow</span>
                 <span className="text-slate-400 text-[11px]">Partisi app default 1MB terlampaui</span>
               </div>
-              <code className="shrink-0 bg-slate-950 px-2 py-1 rounded border border-slate-800 text-fuchsia-300 text-[11px]">
+              <code className="self-start sm:self-auto shrink-0 bg-slate-950 px-2 py-1 rounded border border-slate-800 text-fuchsia-300 text-[11px]">
                 partitions.csv 3MB
               </code>
             </div>

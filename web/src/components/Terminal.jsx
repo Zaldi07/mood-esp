@@ -22,17 +22,17 @@ export default function Terminal({ logs, onClear }) {
   return (
     <div className="rounded-xl border border-slate-800 bg-[#06080d] overflow-hidden shadow-2xl flex flex-col font-mono text-xs">
       {/* Terminal Title Bar */}
-      <div className="flex items-center justify-between px-4 py-2.5 bg-slate-900/90 border-b border-slate-800/80">
-        <div className="flex items-center gap-2">
-          <TerminalIcon className="w-3.5 h-3.5 text-cyan-400" />
-          <span className="font-semibold text-slate-300 text-[11px] tracking-wide">
-            SERIAL FLASH CONSOLE & LOGS
+      <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-900/90 border-b border-slate-800/80 gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+          <TerminalIcon className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+          <span className="font-semibold text-slate-300 text-[10px] sm:text-[11px] tracking-wide truncate">
+            SERIAL LOGS
           </span>
-          <span className="px-1.5 py-0.5 rounded text-[10px] bg-slate-800 text-slate-400">
-            {logs.length} lines
+          <span className="px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] bg-slate-800 text-slate-400 shrink-0">
+            {logs.length}
           </span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           <button
             onClick={onClear}
             title="Bersihkan log"

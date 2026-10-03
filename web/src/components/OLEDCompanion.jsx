@@ -22,6 +22,7 @@ import {
   Power,
   PowerOff
 } from 'lucide-react';
+import prototypeImg from '../assets/prototipe.png';
 
 const BABEL_QUOTES = [
   "\"We have to die to get their pity. We have to die for them to find us noble. Our deaths become their battle cry... I want to live.\"",
@@ -314,102 +315,103 @@ export default function OLEDCompanion() {
   const displayedQuote = currentQuote.slice(0, revealedChars);
 
   return (
-    <div id="simulator" className="relative glass-panel rounded-2xl p-6 lg:p-8 border border-white/10 shadow-2xl overflow-hidden scroll-mt-20">
-      {/* Ambient background glow */}
-      <div className="absolute -top-24 -left-24 w-72 h-72 bg-violet-600/15 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-fuchsia-600/10 rounded-full blur-3xl pointer-events-none" />
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+    <div id="simulator" className="relative glass-panel rounded-2xl p-4 sm:p-6 lg:p-8 border border-white/10 shadow-card overflow-hidden scroll-mt-20">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
         
-        {/* Left: Device 3D/OLED Simulator Frame */}
-        <div className="lg:col-span-6 flex flex-col items-center">
-          <div className="w-full max-w-sm">
+        {/* Left: Device Hardware Prototype & OLED Simulator */}
+        <div className="lg:col-span-6 flex flex-col items-center w-full">
+          <div className="w-full max-w-[340px] sm:max-w-[400px] mx-auto flex flex-col items-center">
             
-            {/* Outer Hardware Case */}
+            {/* Hardware Status Header */}
+            <div className="w-full flex items-center justify-between px-2 mb-2 text-[10px] sm:text-[11px] font-mono text-slate-400">
+              <span className="flex items-center gap-1.5 font-bold tracking-wider text-violet-400">
+                <span className={`w-2 h-2 rounded-full ${
+                  bootMode === 'sleeping' 
+                    ? 'bg-slate-700' 
+                    : isPlayingMelody 
+                      ? 'bg-emerald-400 animate-ping' 
+                      : 'bg-violet-400 animate-pulse'
+                }`} />
+                DESKBUDDY HARDWARE
+              </span>
+              <span className="text-slate-500">SSD1306 128×64 OLED</span>
+            </div>
+
+            {/* Hardware Prototype Container */}
             <motion.div 
-              className={`relative bg-[#0d0a18] rounded-3xl p-5 border transition-all duration-300 ${
-                isTouched || isPlayingMelody || bootMode === 'boot_intro' 
-                  ? 'border-violet-400 shadow-glow-purple scale-[1.02]' 
-                  : bootMode === 'sleeping' 
-                    ? 'border-slate-800/60 shadow-none opacity-85' 
-                    : 'border-slate-800 shadow-2xl'
-              }`}
+              className="relative w-full aspect-square select-none"
               animate={{ y: bootMode === 'sleeping' ? 0 : [0, -4, 0] }}
               transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
             >
-              {/* Screws representation in 4 corners */}
-              <div className="absolute top-2.5 left-2.5 w-2 h-2 rounded-full bg-slate-700 border border-slate-600 shadow-inner" />
-              <div className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-slate-700 border border-slate-600 shadow-inner" />
-              <div className="absolute bottom-2.5 left-2.5 w-2 h-2 rounded-full bg-slate-700 border border-slate-600 shadow-inner" />
-              <div className="absolute bottom-2.5 right-2.5 w-2 h-2 rounded-full bg-slate-700 border border-slate-600 shadow-inner" />
+              {/* Chassis Image */}
+              <img 
+                src={prototypeImg} 
+                alt="DeskBuddy Hardware Prototype" 
+                className="w-full h-full object-contain filter drop-shadow-2xl pointer-events-none select-none" 
+              />
 
-              {/* Hardware Header Label */}
-              <div className="flex items-center justify-between px-2 mb-3 text-[11px] font-mono text-slate-400">
-                <span className="flex items-center gap-1.5 font-bold tracking-wider text-violet-400">
-                  <span className={`w-2 h-2 rounded-full ${
-                    bootMode === 'sleeping' 
-                      ? 'bg-slate-700' 
-                      : isPlayingMelody 
-                        ? 'bg-emerald-400 animate-ping' 
-                        : 'bg-violet-400 animate-pulse'
-                  }`} />
-                  ESP32 OLED SIM
-                </span>
-                <span className="text-slate-500">SSD1306 128×64</span>
-              </div>
-
-              {/* OLED Screen Bezel & Screen Glass */}
+              {/* Dynamic OLED Screen Overlay inside the prototype cutout */}
               <div 
                 onMouseDown={handleTouchDown}
                 onMouseUp={handleTouchUp}
                 onTouchStart={handleTouchDown}
                 onTouchEnd={handleTouchUp}
-                className="oled-screen-container rounded-2xl p-4 cursor-pointer relative overflow-hidden aspect-[128/64] flex flex-col justify-between select-none group"
+                style={{ 
+                  position: 'absolute', 
+                  left: '27.4%', 
+                  top: '16.9%', 
+                  width: '46.3%', 
+                  height: '25.3%' 
+                }}
+                className={`bg-[#0d0e12] rounded-[3px] sm:rounded-[5px] cursor-pointer overflow-hidden flex flex-col justify-between p-1 sm:p-1.5 z-10 select-none group border border-white/[0.06] shadow-inner transition-opacity duration-300 ${
+                  bootMode === 'sleeping' ? 'opacity-85' : 'opacity-100'
+                }`}
+                title="Layar OLED DeskBuddy (Klik untuk Touch Sensor)"
               >
                 {/* OLED Status Bar Header */}
-                <div className="flex items-center justify-between text-[11px] font-mono text-violet-200/90 relative z-20 px-1 border-b border-violet-500/20 pb-1">
+                <div className="flex items-center justify-between text-[7.5px] sm:text-[8.5px] font-mono text-violet-200/90 relative z-20 px-0.5 border-b border-violet-500/20 pb-0.5 leading-none">
                   {bootMode === 'sleeping' ? (
-                    <div className="w-full text-center text-slate-500 font-mono text-[10px]">
-                      [ SLEEP MODE (0 mA) — KETUK UNTUK BANGUN ]
+                    <div className="w-full text-center text-slate-500 font-mono text-[7px] sm:text-[8px]">
+                      [ SLEEP MODE (0 mA) ]
                     </div>
                   ) : sleepProgress !== null ? (
-                    <div className="w-full text-center text-violet-300 font-mono font-bold text-[10px] animate-pulse">
-                      TAHAN 5 DETIK UNTUK MEMATIKAN
+                    <div className="w-full text-center text-violet-300 font-mono font-bold text-[7px] sm:text-[8px] animate-pulse">
+                      TAHAN 5s UNTUK MATIKAN
                     </div>
                   ) : bootMode === 'companion' ? (
                     <>
-                      <div className="flex items-center gap-2">
-                        <Wifi className="w-3.5 h-3.5 text-violet-300" />
-                        <span>NTP OK</span>
-                      </div>
-                      <span className="font-bold tracking-widest">{clock}</span>
                       <div className="flex items-center gap-1">
+                        <Wifi className="w-2.5 h-2.5 text-violet-300" />
+                        <span>NTP</span>
+                      </div>
+                      <span className="font-bold tracking-wider">{clock}</span>
+                      <div className="flex items-center gap-0.5">
                         <span>94%</span>
-                        <Battery className="w-3.5 h-3.5 text-violet-300" />
+                        <Battery className="w-2.5 h-2.5 text-violet-300" />
                       </div>
                     </>
                   ) : bootMode === 'boot_intro' ? (
                     <>
-                      <div className="flex items-center gap-1.5 text-emerald-300 font-bold">
-                        <Rocket className="w-3.5 h-3.5 animate-bounce" />
-                        <span>BOOT INTRO</span>
+                      <div className="flex items-center gap-1 text-emerald-300 font-bold">
+                        <Rocket className="w-2.5 h-2.5 animate-bounce" />
+                        <span>BOOT</span>
                       </div>
-                      <span className="text-[10px] text-violet-400/80 animate-pulse">BUZZER GPIO 5</span>
-                      <span className="text-[10px] text-slate-400">128×64</span>
+                      <span className="text-[7px] text-violet-400/80 animate-pulse">BUZZER</span>
+                      <span className="text-[7px] text-slate-400">128×64</span>
                     </>
                   ) : (
                     <>
-                      <div className="flex items-center gap-1.5 text-violet-300 font-bold">
-                        <BookOpen className="w-3.5 h-3.5 text-violet-400" />
-                        <span>BABEL #{selectedQuoteIdx + 1}/26</span>
+                      <div className="flex items-center gap-1 text-violet-300 font-bold">
+                        <BookOpen className="w-2.5 h-2.5 text-violet-400" />
+                        <span>#{selectedQuoteIdx + 1}/26</span>
                       </div>
-                      <span className="text-[9px] text-violet-400/60 uppercase">TAP TO SKIP</span>
+                      <span className="text-[6.5px] sm:text-[7px] text-violet-400/60 uppercase">TAP TO SKIP</span>
                     </>
                   )}
                 </div>
 
-                {/* OLED Display Area */}
-                <div className="relative z-20 flex-1 flex items-center justify-center my-1 overflow-hidden">
+                {/* OLED Display Area (GIF / Quotes / Sleep) */}
+                <div className="relative z-20 flex-1 flex items-center justify-center my-0.5 overflow-hidden">
                   <AnimatePresence mode="wait">
                     {sleepProgress !== null ? (
                       <motion.div
@@ -417,14 +419,14 @@ export default function OLEDCompanion() {
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0 }}
-                        className="flex-1 flex flex-col justify-center items-center px-2 font-mono text-violet-300 select-none"
+                        className="flex-1 flex flex-col justify-center items-center px-1 font-mono text-violet-300 select-none text-center"
                       >
-                        <div className="text-[10px] text-violet-400 font-bold tracking-wider uppercase">== SLEEP MODE ==</div>
-                        <div className="text-xs font-bold text-violet-200 my-0.5">(- . -) z Z</div>
-                        <div className="text-[10px] text-violet-400/90 mb-1.5">
-                          Tidur dalam {Math.max(1, Math.ceil((100 - sleepProgress) * 3 / 100))} detik...
+                        <div className="text-[7px] sm:text-[8px] text-violet-400 font-bold uppercase tracking-wider">== SLEEP MODE ==</div>
+                        <div className="text-[10px] sm:text-xs font-bold text-violet-200 my-0.5">(- . -) z Z</div>
+                        <div className="text-[7px] sm:text-[7.5px] text-violet-400/90 mb-0.5">
+                          Tidur {Math.max(1, Math.ceil((100 - sleepProgress) * 3 / 100))}s...
                         </div>
-                        <div className="w-36 h-2 bg-slate-950 border border-violet-400/50 rounded-full overflow-hidden p-0.5">
+                        <div className="w-20 sm:w-28 h-1.5 bg-slate-950 border border-violet-400/50 rounded-full overflow-hidden p-0.5">
                           <div 
                             className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full transition-all duration-75"
                             style={{ width: `${sleepProgress}%` }}
@@ -437,24 +439,24 @@ export default function OLEDCompanion() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="flex-1 flex flex-col justify-center items-center text-center p-2 select-none"
+                        className="flex-1 flex flex-col justify-center items-center text-center p-1 select-none"
                       >
-                        <div className="w-2.5 h-2.5 rounded-full bg-slate-700 animate-ping mb-2" />
-                        <span className="text-[11px] font-mono text-slate-500 font-bold tracking-wider">LAYAR MATI (0 mA)</span>
-                        <span className="text-[9px] font-mono text-slate-600 mt-1">Sentuh sensor untuk membangunkan</span>
+                        <div className="w-2 h-2 rounded-full bg-slate-700 animate-ping mb-1" />
+                        <span className="text-[8px] sm:text-[9px] font-mono text-slate-500 font-bold tracking-wider">LAYAR MATI (0 mA)</span>
+                        <span className="text-[6.5px] sm:text-[7.5px] font-mono text-slate-600">Sentuh sensor untuk bangun</span>
                       </motion.div>
                     ) : bootMode === 'boot_quote' ? (
                       <motion.div
                         key="boot-quote"
-                        initial={{ opacity: 0, y: 4 }}
+                        initial={{ opacity: 0, y: 3 }}
                         animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -4 }}
-                        className="w-full px-1 text-left font-mono text-violet-200 select-none"
+                        exit={{ opacity: 0, y: -3 }}
+                        className="w-full px-0.5 text-left font-mono text-violet-200 select-none"
                       >
-                        <p className="text-[11px] sm:text-[11.5px] leading-snug tracking-tight text-violet-100 line-clamp-3">
+                        <p className="text-[8px] sm:text-[9px] leading-tight tracking-tight text-violet-100 line-clamp-3">
                           {displayedQuote}
                           {!isTypingDone && (
-                            <span className="inline-block w-1.5 h-3 bg-violet-400 ml-0.5 animate-pulse align-middle" />
+                            <span className="inline-block w-1 h-2.5 bg-violet-400 ml-0.5 animate-pulse align-middle" />
                           )}
                         </p>
                       </motion.div>
@@ -463,7 +465,7 @@ export default function OLEDCompanion() {
                         key={currentMood.id + bootMode}
                         src={bootMode === 'boot_intro' ? '/gifs/intro.gif' : currentMood.gif}
                         alt={currentMood.name}
-                        className="max-h-24 object-contain filter contrast-125 brightness-110 drop-shadow-[0_0_10px_rgba(139,92,246,0.6)]"
+                        className="max-h-[46px] sm:max-h-[58px] object-contain contrast-125 brightness-110"
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.85 }}
@@ -474,106 +476,138 @@ export default function OLEDCompanion() {
                 </div>
 
                 {/* OLED Footer status */}
-                <div className="flex items-center justify-between text-[10px] font-mono text-violet-400/70 relative z-20 px-1 border-t border-violet-500/20 pt-0.5">
+                <div className="flex items-center justify-between text-[7px] sm:text-[8px] font-mono text-violet-400/80 relative z-20 px-0.5 border-t border-violet-500/20 pt-0.5 leading-none">
                   {bootMode === 'sleeping' ? (
-                    <div className="w-full text-center text-[9px] text-slate-600">
-                      STATUS: ULTRA LOW POWER LIGHT SLEEP
+                    <div className="w-full text-center text-[6.5px] sm:text-[7px] text-slate-600">
+                      STATUS: LIGHT SLEEP
                     </div>
                   ) : sleepProgress !== null ? (
-                    <div className="w-full text-center text-[9px] text-violet-400/80">
-                      LEPAS UNTUK BATALKAN
+                    <div className="w-full text-center text-[6.5px] sm:text-[7px] text-violet-400">
+                      LEPAS UNTUK BATAL
                     </div>
                   ) : bootMode === 'boot_intro' ? (
                     <>
                       <span className="text-emerald-400 font-bold flex items-center gap-1 animate-pulse">
-                        <Music className="w-3 h-3" /> INTRO.GIF + CHIPTUNE
+                        <Music className="w-2 h-2" /> CHIPTUNE
                       </span>
-                      <span className="text-[9px] text-violet-400/50">STEP 1/2</span>
+                      <span className="text-[6.5px] text-violet-400/50">STEP 1/2</span>
                     </>
                   ) : bootMode === 'boot_quote' ? (
                     <>
                       <span className="truncate text-violet-300">
-                        {isTypingDone ? 'QUOTES COMPLETE' : 'TYPEWRITER INTRO...'}
+                        {isTypingDone ? 'QUOTES COMPLETE' : 'TYPEWRITER...'}
                       </span>
-                      <span className="text-[9px] text-violet-400/60">STEP 2/2</span>
+                      <span className="text-[6.5px] text-violet-400/60">STEP 2/2</span>
                     </>
                   ) : (
                     <>
                       <span className="truncate">MODE: {currentMood.name.toUpperCase()}</span>
                       {isPlayingMelody ? (
-                        <span className="flex items-center gap-1 text-emerald-400 font-bold animate-pulse">
-                          <Music className="w-3 h-3" /> BUZZER ON
+                        <span className="flex items-center gap-0.5 text-emerald-400 font-bold animate-pulse">
+                          <Music className="w-2 h-2" /> BUZZER
                         </span>
                       ) : (
-                        <span className="text-[9px] text-violet-400/50">TAHAN 5s UNTUK SLEEP</span>
+                        <span className="text-[6.5px] text-violet-400/50">TAHAN 5s = SLEEP</span>
                       )}
                     </>
                   )}
                 </div>
 
-                {/* Touch Feedback overlay */}
+                {/* Touch Feedback overlay inside screen */}
                 {isTouched && bootMode !== 'sleeping' && (
                   <motion.div 
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="absolute inset-0 bg-violet-600/15 pointer-events-none z-30 flex items-center justify-center"
+                    className="absolute inset-0 bg-violet-600/20 pointer-events-none z-30 flex items-center justify-center backdrop-blur-[0.5px]"
                   >
-                    <span className="px-3 py-1 bg-violet-950/90 border border-violet-400/50 rounded-lg text-violet-200 text-xs font-mono font-bold animate-bounce shadow-glow-purple">
-                      ✨ SENSOR TOUCH (GPIO 7)!
+                    <span className="px-1.5 py-0.5 bg-[#160f33]/90 border border-violet-400/60 rounded text-violet-200 text-[8px] sm:text-[9px] font-mono font-bold">
+                      TOUCH!
                     </span>
                   </motion.div>
                 )}
               </div>
 
-              {/* Hardware Action Buttons below case */}
-              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-slate-800">
-                <button
-                  onClick={startBootSequence}
-                  className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-mono transition-all active:scale-95 cursor-pointer ${
-                    bootMode === 'boot_intro' || isPlayingMelody
-                      ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300 shadow-glow-green font-bold'
-                      : 'bg-violet-500/15 hover:bg-violet-500/25 border-violet-500/40 text-violet-200'
-                  }`}
-                >
-                  <Rocket className={`w-3.5 h-3.5 ${isPlayingMelody ? 'animate-bounce text-emerald-400' : 'text-violet-400'}`} />
-                  <span>{bootMode === 'boot_intro' ? 'Boot Berjalan...' : 'Boot Sequence'}</span>
-                </button>
-
-                <button
-                  onMouseDown={handleTouchDown}
-                  onMouseUp={handleTouchUp}
-                  onTouchStart={handleTouchDown}
-                  onTouchEnd={handleTouchUp}
-                  className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-mono transition-all active:scale-95 cursor-pointer ${
-                    bootMode === 'sleeping'
-                      ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300 animate-pulse font-bold'
-                      : 'bg-slate-800/80 hover:bg-violet-500/20 border-slate-700 hover:border-violet-500/40 text-slate-300 hover:text-violet-200'
-                  }`}
-                >
-                  {bootMode === 'sleeping' ? (
-                    <>
-                      <Power className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>Ketuk untuk Bangun</span>
-                    </>
-                  ) : (
-                    <>
-                      <Hand className="w-3.5 h-3.5 text-violet-400" />
-                      <span>Touch / Tahan 5s Sleep</span>
-                    </>
-                  )}
-                </button>
+              {/* Touch Sensor Area on Bottom Wooden Plate */}
+              <div 
+                onMouseDown={handleTouchDown}
+                onMouseUp={handleTouchUp}
+                onTouchStart={handleTouchDown}
+                onTouchEnd={handleTouchUp}
+                style={{
+                  position: 'absolute',
+                  left: '23.5%',
+                  top: '58.5%',
+                  width: '53.5%',
+                  height: '27.5%'
+                }}
+                className={`rounded-lg cursor-pointer transition-all duration-200 flex items-center justify-center group ${
+                  isTouched 
+                    ? 'bg-violet-600/30 ring-2 ring-violet-400/60' 
+                    : 'hover:bg-violet-500/10'
+                }`}
+                title="Sensor Sentuh Kapasitif (GPIO 7) - Klik/Tahan di sini"
+              >
+                <div className={`opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-mono text-violet-200 pointer-events-none ${
+                  isTouched ? 'opacity-100 !bg-violet-900/80' : ''
+                }`}>
+                  {isTouched ? '✨ SENSOR TOUCH (GPIO 7)' : '👆 Sentuh Sensor (GPIO 7)'}
+                </div>
               </div>
 
             </motion.div>
+
+            {/* Hardware Action Buttons below case */}
+            <div className="w-full mt-3 grid grid-cols-2 gap-2 pt-2 border-t border-slate-800">
+              <button
+                onClick={startBootSequence}
+                className={`flex items-center justify-center gap-1.5 sm:gap-2 py-2 sm:py-2.5 px-2 sm:px-3 rounded-xl border text-[11px] sm:text-xs font-mono transition-all active:scale-95 cursor-pointer ${
+                  bootMode === 'boot_intro' || isPlayingMelody
+                    ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300 font-bold'
+                    : 'bg-violet-500/15 hover:bg-violet-500/25 border-violet-500/40 text-violet-200'
+                }`}
+              >
+                <Rocket className={`w-3 sm:w-3.5 h-3 sm:h-3.5 ${isPlayingMelody ? 'animate-bounce text-emerald-400' : 'text-violet-400'}`} />
+                <span className="truncate">{bootMode === 'boot_intro' ? 'Booting...' : 'Boot Sequence'}</span>
+              </button>
+
+              <button
+                onMouseDown={handleTouchDown}
+                onMouseUp={handleTouchUp}
+                onTouchStart={handleTouchDown}
+                onTouchEnd={handleTouchUp}
+                className={`flex items-center justify-center gap-1.5 sm:gap-2 py-2 sm:py-2.5 px-2 sm:px-3 rounded-xl border text-[11px] sm:text-xs font-mono transition-all active:scale-95 cursor-pointer ${
+                  bootMode === 'sleeping'
+                    ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300 animate-pulse font-bold'
+                    : 'bg-slate-800/80 hover:bg-violet-500/20 border-slate-700 hover:border-violet-500/40 text-slate-300 hover:text-violet-200'
+                }`}
+              >
+                {bootMode === 'sleeping' ? (
+                  <>
+                    <Power className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-emerald-400 shrink-0" />
+                    <span className="truncate">Bangunkan</span>
+                  </>
+                ) : (
+                  <>
+                    <Hand className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-violet-400 shrink-0" />
+                    <span className="truncate">Touch / Sleep</span>
+                  </>
+                )}
+              </button>
+            </div>
+            
+            <p className="text-[10px] text-slate-400 text-center mt-2 font-mono">
+              💡 Klik layar atau sentuh panel bawah (GPIO 7) untuk ganti ekspresi / tahan 5s untuk sleep
+            </p>
+
           </div>
         </div>
 
         {/* Right: Companion Controls & Expression Selector */}
-        <div className="lg:col-span-6 flex flex-col justify-between space-y-6">
-          <div className="space-y-4">
+        <div className="lg:col-span-6 flex flex-col justify-between space-y-5 sm:space-y-6">
+          <div className="space-y-3 sm:space-y-4">
             <div>
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex flex-wrap items-center gap-2 mb-2">
                 <span className="px-2 py-0.5 text-[10px] font-mono uppercase tracking-widest text-violet-300 bg-violet-500/15 border border-violet-500/25 rounded">
                   ESP32-C3 Firmware v1.0
                 </span>
@@ -586,7 +620,7 @@ export default function OLEDCompanion() {
                   {bootMode === 'sleeping' ? 'Light Sleep (0 mA)' : 'Active (Online)'}
                 </span>
               </div>
-              <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">
                 DeskBuddy <span className="text-violet-400">V1</span>
               </h1>
               <p className="text-xs font-mono text-slate-400 mt-1">
@@ -594,21 +628,21 @@ export default function OLEDCompanion() {
               </p>
             </div>
 
-            {/* Quick Gestures Grid (Minimal, No long text) */}
+            {/* Quick Gestures Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-              <div className="p-2.5 rounded-xl bg-slate-900/60 border border-white/[0.06] text-center">
+              <div className="p-2 sm:p-2.5 rounded-xl bg-slate-900/60 border border-white/[0.06] text-center">
                 <div className="text-[10px] font-mono text-violet-400 font-bold uppercase">1x Tap</div>
                 <div className="text-xs font-medium text-slate-200 mt-0.5">Pet / Jump</div>
               </div>
-              <div className="p-2.5 rounded-xl bg-slate-900/60 border border-white/[0.06] text-center">
-                <div className="text-[10px] font-mono text-fuchsia-400 font-bold uppercase">2x Tap</div>
+              <div className="p-2 sm:p-2.5 rounded-xl bg-slate-900/60 border border-white/[0.06] text-center">
+                <div className="text-[10px] font-mono text-violet-300 font-bold uppercase">2x Tap</div>
                 <div className="text-xs font-medium text-slate-200 mt-0.5">Back / Reset</div>
               </div>
-              <div className="p-2.5 rounded-xl bg-slate-900/60 border border-white/[0.06] text-center">
+              <div className="p-2 sm:p-2.5 rounded-xl bg-slate-900/60 border border-white/[0.06] text-center">
                 <div className="text-[10px] font-mono text-amber-400 font-bold uppercase">Hold 1.5s</div>
                 <div className="text-xs font-medium text-slate-200 mt-0.5">Menu Astra</div>
               </div>
-              <div className="p-2.5 rounded-xl bg-emerald-950/20 border border-emerald-500/30 text-center">
+              <div className="p-2 sm:p-2.5 rounded-xl bg-emerald-950/20 border border-emerald-500/30 text-center">
                 <div className="text-[10px] font-mono text-emerald-400 font-bold uppercase">Hold 5s</div>
                 <div className="text-xs font-medium text-emerald-200 mt-0.5">Sleep (0 mA)</div>
               </div>
@@ -626,13 +660,13 @@ export default function OLEDCompanion() {
                   <Moon className="w-3 h-3" /> Sedang Tidur
                 </span>
               ) : (
-                <span className="text-[11px] font-mono text-violet-400">
+                <span className="text-[11px] font-mono text-violet-400 truncate max-w-[150px]">
                   {bootMode !== 'companion' ? 'Boot Sequence' : currentMood.name}
                 </span>
               )}
             </div>
             
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 sm:gap-2">
               {MOODS.map((mood) => {
                 const Icon = mood.icon;
                 const active = bootMode === 'companion' && currentMood.id === mood.id;
@@ -647,13 +681,13 @@ export default function OLEDCompanion() {
                         setCurrentMood(mood);
                       }
                     }}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium border transition-all text-left cursor-pointer ${
+                    className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-medium border transition-all text-left cursor-pointer ${
                       active
-                        ? 'bg-violet-600/25 border-violet-400 text-violet-200 shadow-glow-purple'
+                        ? 'bg-violet-600/30 border-violet-400 text-violet-200 font-semibold shadow-sm'
                         : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
                     }`}
                   >
-                    <Icon className={`w-3.5 h-3.5 ${active ? 'text-violet-400' : 'text-slate-500'}`} />
+                    <Icon className={`w-3.5 h-3.5 shrink-0 ${active ? 'text-violet-400' : 'text-slate-500'}`} />
                     <span className="truncate">{mood.name}</span>
                   </button>
                 );
@@ -662,17 +696,17 @@ export default function OLEDCompanion() {
           </div>
 
           {/* Hardware Specs Minimal Pills */}
-          <div className="pt-2 border-t border-white/[0.06] flex flex-wrap gap-2 text-[11px] font-mono text-slate-400">
-            <span className="px-2.5 py-1 rounded-md bg-slate-900/80 border border-slate-800 text-violet-300">
+          <div className="pt-2 border-t border-white/[0.06] flex flex-wrap gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] font-mono text-slate-400">
+            <span className="px-2 sm:px-2.5 py-1 rounded-md bg-slate-900/80 border border-slate-800 text-violet-300">
               I2C: GPIO 8 / 9
             </span>
-            <span className="px-2.5 py-1 rounded-md bg-slate-900/80 border border-slate-800 text-fuchsia-300">
+            <span className="px-2 sm:px-2.5 py-1 rounded-md bg-slate-900/80 border border-slate-800 text-fuchsia-300">
               Touch: GPIO 7
             </span>
-            <span className="px-2.5 py-1 rounded-md bg-slate-900/80 border border-slate-800 text-amber-300">
+            <span className="px-2 sm:px-2.5 py-1 rounded-md bg-slate-900/80 border border-slate-800 text-amber-300">
               Buzzer: GPIO 5
             </span>
-            <span className="px-2.5 py-1 rounded-md bg-slate-900/80 border border-slate-800 text-slate-400">
+            <span className="px-2 sm:px-2.5 py-1 rounded-md bg-slate-900/80 border border-slate-800 text-slate-400">
               Display: 0.96" SSD1306
             </span>
           </div>

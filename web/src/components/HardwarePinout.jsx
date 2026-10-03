@@ -13,40 +13,45 @@ export default function HardwarePinout() {
     <section id="pinout" className="py-8 border-t border-white/[0.08]">
       <div className="space-y-4">
         
-        <div>
-          <span className="text-xs font-mono uppercase tracking-widest text-emerald-400">
-            Wiring
+        <div className="flex items-center justify-between">
+          <div>
+            <span className="text-xs font-mono uppercase tracking-widest text-emerald-400">
+              Wiring
+            </span>
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white mt-0.5">
+              Skema Pinout Hardware
+            </h2>
+          </div>
+          <span className="inline-block sm:hidden text-[10px] text-slate-500 font-mono">
+            ← Geser tabel →
           </span>
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white mt-0.5">
-            Skema Pinout Hardware
-          </h2>
         </div>
 
         {/* Minimalist Pinout Table */}
         <div className="rounded-xl overflow-hidden border border-white/[0.08] bg-slate-900/60 shadow-lg">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left font-mono text-xs">
+          <div className="overflow-x-auto scrollbar-thin">
+            <table className="w-full min-w-[560px] text-left font-mono text-xs">
               <thead className="bg-slate-950/80 text-slate-400 border-b border-white/[0.06]">
                 <tr>
-                  <th className="py-2.5 px-4">Modul Perangkat</th>
-                  <th className="py-2.5 px-4">Bus</th>
-                  <th className="py-2.5 px-4 text-violet-400">Signal / SDA</th>
-                  <th className="py-2.5 px-4 text-violet-400">SCL</th>
-                  <th className="py-2.5 px-4 text-emerald-400">Power</th>
-                  <th className="py-2.5 px-4 text-slate-400">Keterangan</th>
+                  <th className="py-2.5 px-3 sm:px-4 whitespace-nowrap">Modul Perangkat</th>
+                  <th className="py-2.5 px-3 sm:px-4 whitespace-nowrap">Bus</th>
+                  <th className="py-2.5 px-3 sm:px-4 text-violet-400 whitespace-nowrap">Signal / SDA</th>
+                  <th className="py-2.5 px-3 sm:px-4 text-violet-400 whitespace-nowrap">SCL</th>
+                  <th className="py-2.5 px-3 sm:px-4 text-emerald-400 whitespace-nowrap">Power</th>
+                  <th className="py-2.5 px-3 sm:px-4 text-slate-400 whitespace-nowrap">Keterangan</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.04] text-slate-300">
                 {pinouts.map((pin, idx) => (
                   <tr key={idx} className="hover:bg-white/[0.02] transition-colors">
-                    <td className="py-2.5 px-4 font-semibold text-white">
+                    <td className="py-2 sm:py-2.5 px-3 sm:px-4 font-semibold text-white whitespace-nowrap">
                       {pin.module}
                     </td>
-                    <td className="py-2.5 px-4 text-slate-400">{pin.type}</td>
-                    <td className="py-2.5 px-4 font-bold text-violet-300">{pin.sda}</td>
-                    <td className="py-2.5 px-4 font-bold text-violet-300">{pin.scl}</td>
-                    <td className="py-2.5 px-4 text-emerald-300">{pin.vcc} & {pin.gnd}</td>
-                    <td className="py-2.5 px-4 text-slate-400 text-[11px]">{pin.notes}</td>
+                    <td className="py-2 sm:py-2.5 px-3 sm:px-4 text-slate-400 whitespace-nowrap">{pin.type}</td>
+                    <td className="py-2 sm:py-2.5 px-3 sm:px-4 font-bold text-violet-300 whitespace-nowrap">{pin.sda}</td>
+                    <td className="py-2 sm:py-2.5 px-3 sm:px-4 font-bold text-violet-300 whitespace-nowrap">{pin.scl}</td>
+                    <td className="py-2 sm:py-2.5 px-3 sm:px-4 text-emerald-300 whitespace-nowrap">{pin.vcc} & {pin.gnd}</td>
+                    <td className="py-2 sm:py-2.5 px-3 sm:px-4 text-slate-400 text-[11px] whitespace-nowrap">{pin.notes}</td>
                   </tr>
                 ))}
               </tbody>

@@ -7,13 +7,11 @@
 }
 
 body {
-  background-color: #090714;
+  background-color: #0c0a18;
   background-image: 
-    radial-gradient(circle at 50% 0%, rgba(124, 58, 237, 0.14) 0%, transparent 55%),
-    radial-gradient(circle at 100% 50%, rgba(139, 92, 246, 0.08) 0%, transparent 45%),
     linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
-  background-size: 100% 100%, 100% 100%, 32px 32px, 32px 32px;
+  background-size: 32px 32px;
 }
 
 /* Custom scrollbars */
@@ -22,53 +20,55 @@ body {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #090714;
+  background: #0c0a18;
 }
 ::-webkit-scrollbar-thumb {
-  background: #241c42;
+  background: #231942;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3c2f6d;
+  background: #38256e;
 }
 
-/* OLED Screen Glass & CRT Scanline */
+/* Hide scrollbar utility for clean mobile scrolling */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* OLED Screen & Bezel */
 .oled-screen-container {
   position: relative;
-  background: radial-gradient(circle at center, #140d2d 0%, #06040d 100%);
-  border: 1px solid rgba(139, 92, 246, 0.3);
-  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.9), 0 0 25px rgba(124, 58, 237, 0.2);
+  background: #080611;
+  border: 1px solid rgba(99, 16, 245, 0.35);
+  box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.9);
 }
 
 .oled-screen-container::before {
   content: " ";
   position: absolute;
   top: 0; left: 0; bottom: 0; right: 0;
-  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.4) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.35) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
   z-index: 10;
   background-size: 100% 3px, 6px 100%;
   pointer-events: none;
-  opacity: 0.8;
+  opacity: 0.7;
 }
 
-.oled-glow {
-  text-shadow: 0 0 10px rgba(167, 139, 250, 0.7), 0 0 20px rgba(124, 58, 237, 0.5);
-}
-
-/* Glassmorphism Cards */
+/* Clean Panels */
 .glass-panel {
-  background: rgba(17, 13, 36, 0.72);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: #120e24;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .glass-panel-hover {
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 .glass-panel-hover:hover {
-  border-color: rgba(139, 92, 246, 0.35);
-  box-shadow: 0 8px 30px -10px rgba(124, 58, 237, 0.25);
+  border-color: rgba(99, 16, 245, 0.4);
 }
 
 /* Custom styling for esp-web-install-button slot */

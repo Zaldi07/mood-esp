@@ -214,12 +214,12 @@ export default function Flasher() {
         </div>
 
         {/* Tab switcher buttons */}
-        <div className="flex p-1 bg-slate-900/80 border border-slate-800 rounded-xl text-xs font-mono">
+        <div className="w-full sm:w-auto flex p-1 bg-slate-900/80 border border-slate-800 rounded-xl text-xs font-mono">
           <button
             onClick={() => setActiveTab('esp-web-tools')}
-            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+            className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg transition-all cursor-pointer text-center whitespace-nowrap ${
               activeTab === 'esp-web-tools'
-                ? 'bg-violet-600/25 text-violet-200 border border-violet-500/40'
+                ? 'bg-violet-600/25 text-violet-200 border border-violet-500/40 font-semibold'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -227,9 +227,9 @@ export default function Flasher() {
           </button>
           <button
             onClick={() => setActiveTab('advanced')}
-            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+            className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg transition-all cursor-pointer text-center whitespace-nowrap ${
               activeTab === 'advanced'
-                ? 'bg-violet-600/25 text-violet-200 border border-violet-500/40'
+                ? 'bg-violet-600/25 text-violet-200 border border-violet-500/40 font-semibold'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -244,12 +244,12 @@ export default function Flasher() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2 }}
-          className="rounded-2xl p-6 lg:p-8 border border-white/[0.08] bg-slate-900/40 shadow-xl space-y-5"
+          className="rounded-2xl p-4 sm:p-6 lg:p-8 border border-white/[0.08] bg-slate-900/40 shadow-xl space-y-5"
         >
           <div className="max-w-xl mx-auto text-center space-y-4">
             
             {/* Firmware Parts Included */}
-            <div className="bg-slate-950/70 border border-white/[0.06] rounded-xl p-4 text-left font-mono">
+            <div className="bg-slate-950/70 border border-white/[0.06] rounded-xl p-3.5 sm:p-4 text-left font-mono">
               <div className="text-[11px] text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                 <FileCode className="w-3.5 h-3.5 text-violet-400" />
                 <span>Firmware Bundled v1.0.0:</span>
@@ -275,9 +275,9 @@ export default function Flasher() {
               <esp-web-install-button manifest="./manifest.json">
                 <button
                   slot="activate"
-                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-mono font-bold text-xs shadow-glow-purple transition-all active:scale-95 cursor-pointer"
+                  className="flex items-center justify-center gap-2 w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-mono font-bold text-[11px] sm:text-xs shadow-sm transition-all active:scale-95 cursor-pointer"
                 >
-                  <Zap className="w-3.5 h-3.5 fill-current" />
+                  <Zap className="w-3.5 h-3.5 fill-current shrink-0" />
                   <span>HUBUNGKAN & FLASH FIRMWARE</span>
                 </button>
                 <div
@@ -307,15 +307,15 @@ export default function Flasher() {
         >
           {/* Controls Panel */}
           <div className="lg:col-span-6 space-y-5">
-            <div className="glass-panel rounded-2xl p-6 border border-white/10 shadow-xl space-y-4">
+            <div className="glass-panel rounded-2xl p-4 sm:p-6 border border-white/10 shadow-xl space-y-4">
               
               <div className="flex items-center justify-between pb-3 border-b border-white/5">
-                <span className="text-sm font-semibold text-white flex items-center gap-2">
-                  <Sliders className="w-4 h-4 text-violet-400" />
+                <span className="text-xs sm:text-sm font-semibold text-white flex items-center gap-2">
+                  <Sliders className="w-4 h-4 text-violet-400 shrink-0" />
                   Konfigurasi Koneksi Serial
                 </span>
                 {chipInfo && (
-                  <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  <span className="px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 truncate max-w-[140px]">
                     Online: {chipInfo.chipName}
                   </span>
                 )}
@@ -344,19 +344,19 @@ export default function Flasher() {
                   <button
                     onClick={handleConnect}
                     disabled={status === 'connecting'}
-                    className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-semibold text-xs font-mono transition-all shadow-glow-purple active:scale-95 cursor-pointer disabled:opacity-50"
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 sm:px-4 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-semibold text-xs font-mono transition-all shadow-sm active:scale-95 cursor-pointer disabled:opacity-50"
                   >
-                    <Zap className="w-4 h-4" />
+                    <Zap className="w-4 h-4 shrink-0" />
                     <span>{status === 'connecting' ? 'Menghubungkan...' : '1. Pilih Port & Hubungkan'}</span>
                   </button>
                 ) : (
                   <button
                     onClick={handleDisconnect}
                     disabled={status === 'flashing'}
-                    className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs font-mono transition-all border border-slate-700 active:scale-95 cursor-pointer"
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 sm:px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs font-mono transition-all border border-slate-700 active:scale-95 cursor-pointer"
                   >
-                    <RotateCcw className="w-4 h-4" />
-                    <span>Putuskan Koneksi (Disconnect)</span>
+                    <RotateCcw className="w-4 h-4 shrink-0" />
+                    <span>Putuskan Port (Disconnect)</span>
                   </button>
                 )}
               </div>
@@ -429,7 +429,7 @@ export default function Flasher() {
                 disabled={status !== 'connected' && status !== 'error'}
                 className={`w-full py-3 px-4 rounded-xl font-bold text-xs font-mono transition-all flex items-center justify-center gap-2 cursor-pointer ${
                   status === 'connected' || status === 'error'
-                    ? 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-glow-purple active:scale-95'
+                    ? 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-card active:scale-95'
                     : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700/50'
                 }`}
               >

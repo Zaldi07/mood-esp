@@ -7,16 +7,20 @@ export default {
   darkMode: 'class',
   theme: {
     extend: {
+      screens: {
+        'xs': '420px',
+      },
       colors: {
         oled: {
-          bg: '#090714',
-          card: '#110d24',
-          surface: '#171233',
-          border: '#2a1f4d',
-          accent: '#8b5cf6',
-          purple: '#7c3aed',
-          violet: '#6d28d9',
+          bg: '#0c0a18',
+          card: '#130f26',
+          surface: '#1a1435',
+          border: '#2b2152',
+          accent: '#6310f5',
+          purple: '#5b13df',
+          violet: '#6310f5',
           lilac: '#c4b5fd',
+          lavender: '#d8b4fe',
           green: '#10b981',
           amber: '#f59e0b',
           rose: '#f43f5e'
@@ -27,11 +31,8 @@ export default {
         mono: ['"JetBrains Mono"', 'monospace'],
       },
       boxShadow: {
-        'glow-purple': '0 0 25px -5px rgba(139, 92, 246, 0.45)',
-        'glow-violet': '0 0 30px -5px rgba(124, 58, 237, 0.5)',
-        'glow-lilac': '0 0 20px -3px rgba(196, 181, 253, 0.4)',
-        'glow-green': '0 0 25px -5px rgba(16, 185, 129, 0.35)',
-        'glow-oled': '0 0 30px -5px rgba(139, 92, 246, 0.3)',
+        'card': '0 4px 16px -2px rgba(0, 0, 0, 0.45)',
+        'elevated': '0 12px 28px -4px rgba(0, 0, 0, 0.55)',
       },
       animation: {
         'pulse-subtle': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
